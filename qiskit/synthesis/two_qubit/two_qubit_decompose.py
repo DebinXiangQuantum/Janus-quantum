@@ -534,3 +534,130 @@ Args:
 Returns:
     QuantumCircuit: The synthesized circuit of the input unitary.
 """
+
+def decompose_two_qubit_gate(
+    gate: Gate | Operator | np.ndarray,
+    basis_gate: str | Gate = "cx",
+    euler_basis: str = "U",
+    basis_fidelity: float = 1.0,
+    pulse_optimize: bool | None = None,
+    approximate: bool = True,
+    use_dag: bool = False,
+    atol: float = DEFAULT_ATOL
+) -> QuantumCircuit | DAGCircuit:
+    r"""Decompose a two-qubit gate into a different two-qubit basis gate.
+    
+    This function provides a user-friendly interface for converting between different two-qubit gates.
+    It supports converting any two-qubit gate (represented as a Gate object, Operator object, or 
+    numpy matrix) into a circuit composed of the specified basis gate and single-qubit gates.
+    
+    Args:
+        gate: The two-qubit gate to decompose. Can be a Gate object, Operator object, or numpy matrix.
+        basis_gate: The target basis gate to use for decomposition. Can be either a Gate object 
+            or a string name of a standard gate (e.g., "cx", "cz", "rxx", "ryy", "rzz", "rzx").
+        euler_basis: Basis string to be provided to :class:`.OneQubitEulerDecomposer` for 1Q synthesis.
+            Valid options are [``'ZYZ'``, ``'ZXZ'``, ``'XYX'``, ``'U'``, ``'U3'``, ``'U1X'``, 
+            ``'PSX'``, ``'ZSX'``, ``'RR'``].
+        basis_fidelity: Fidelity to be assumed for applications of the basis gate. Defaults to ``1.0``.
+        pulse_optimize: If ``True``, try to do decomposition which minimizes local unitaries 
+            in between entangling gates. Currently, only [{CX, SX, RZ}] is known.
+            If ``False``, don't attempt optimization. If ``None``, attempt optimization but don't raise
+            if unknown.
+        approximate: Approximates if basis fidelities are less than 1.0.
+        use_dag: If true a :class:`.DAGCircuit` is returned instead of a :class:`QuantumCircuit`.
+        atol: Absolute tolerance for checking equality of floating point values during decomposition.
+    
+    Returns:
+        QuantumCircuit or DAGCircuit: The decomposed circuit.
+    
+    Raises:
+        QiskitError: If the input is not a valid two-qubit gate or if the decomposition fails.
+    
+    Examples:
+        Decompose a CZ gate into CX gates:
+        
+        >>> from qiskit.circuit.library import CZGate
+        >>> from qiskit.synthesis.two_qubit import decompose_two_qubit_gate
+        >>> cz_gate = CZGate()
+        >>> cx_based_circuit = decompose_two_qubit_gate(cz_gate, basis_gate="cx")
+        >>> print(cx_based_circuit.draw())
+              ┌───┐   ┌───┐   ┌───┐
+        q_0: ─┤ X ├───┤ H ├───┤ X ├
+              └─┬─┘   ├───┤   └─┬─┘
+        q_1: ───■─────┤ H ├─────■──
+                     └───┘
+        
+        Decompose an arbitrary two-qubit unitary into RXX gates:
+        
+        >>> import numpy as np
+        >>> from qiskit.circuit.library import RXXGate
+        >>> from qiskit.synthesis.two_qubit import decompose_two_qubit_gate
+        >>> # Create a random 4x4 unitary matrix
+        >>> from qiskit.quantum_info import random_unitary
+        >>> unitary = random_unitary(4)
+        >>> # Decompose into RXX gates
+        >>> rxx_based_circuit = decompose_two_qubit_gate(unitary, basis_gate=RXXGate(np.pi/2))
+    """
+    # Convert input gate to unitary matrix if needed
+    if isinstance(gate, Gate):
+        unitary = Operator(gate).data
+    elif isinstance(gate, Operator):
+        unitary = gate.data
+    elif isinstance(gate, np.ndarray):
+        unitary = gate
+    else:
+        raise QiskitError(f"Input gate must be a Gate, Operator, or numpy array, got {type(gate).__name__}")
+    
+    # Validate unitary shape
+    if unitary.shape != (4, 4):
+        raise QiskitError(f"Input must be a 4x4 unitary matrix, got shape {unitary.shape}")
+    
+    # Convert basis_gate to Gate object if needed
+    if isinstance(basis_gate, str):
+        # Check if it's a standard gate name
+        if basis_gate in GATE_NAME_MAP:
+            basis_gate_obj = GATE_NAME_MAP[basis_gate]()
+        else:
+            # Try to import and instantiate the gate from standard_gates
+            from qiskit.circuit.library.standard_gates import (CZGate, CPhaseGate, CRXGate, CRYGate, CRZGate, 
+                                                               RXXGate, RYYGate, RZZGate, RZXGate)
+            
+            GATE_NAME_EXTENDED = {
+                "cz": CZGate,
+                "cphase": CPhaseGate,
+                "crx": CRXGate,
+                "cry": CRYGate,
+                "crz": CRZGate,
+                "rxx": RXXGate,
+                "ryy": RYYGate,
+                "rzz": RZZGate,
+                "rzx": RZXGate,
+            }
+            
+            if basis_gate in GATE_NAME_EXTENDED:
+                # For parameterized gates, use a default parameter
+                if basis_gate in ["cphase", "crx", "cry", "crz", "rxx", "ryy", "rzz", "rzx"]:
+                    basis_gate_obj = GATE_NAME_EXTENDED[basis_gate](np.pi/2)  # Default parameter
+                else:
+                    basis_gate_obj = GATE_NAME_EXTENDED[basis_gate]()
+            else:
+                raise QiskitError(f"Unknown basis gate name: {basis_gate}")
+    elif isinstance(basis_gate, Gate):
+        basis_gate_obj = basis_gate
+    else:
+        raise QiskitError(f"Basis gate must be a string or Gate object, got {type(basis_gate).__name__}")
+    
+    # Create decomposer and decompose
+    decomposer = TwoQubitBasisDecomposer(
+        basis_gate_obj,
+        basis_fidelity=basis_fidelity,
+        euler_basis=euler_basis,
+        pulse_optimize=pulse_optimize
+    )
+    
+    return decomposer(
+        unitary,
+        basis_fidelity=basis_fidelity,
+        approximate=approximate,
+        use_dag=use_dag
+    )

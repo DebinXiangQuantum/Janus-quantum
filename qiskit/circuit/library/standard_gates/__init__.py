@@ -43,6 +43,9 @@ from .x import MCXGate, MCXGrayCode, MCXRecursive, MCXVChain
 from .y import YGate, CYGate
 from .z import ZGate, CZGate, CCZGate
 from .global_phase import GlobalPhaseGate
+from .controlled_gate_decompose import decompose_controlled_gate
+from .two_qubit_kak_decompose import decompose_two_qubit_kak
+from .kak_decompose import decompose_kak
 
 
 def get_standard_gate_name_mapping():

@@ -27,5 +27,6 @@ from .mcx_synthesis import (
     synth_mcx_noaux_hp24,
     synth_c3x,
     synth_c4x,
+    decompose_multi_control_toffoli,
 )
 from .multi_control_rotation_gates import _apply_cu, _apply_mcu_graycode, _mcsu2_real_diagonal

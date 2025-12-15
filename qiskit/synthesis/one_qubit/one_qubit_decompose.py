@@ -286,3 +286,38 @@ class OneQubitEulerDecomposer:
     _params_xzx = staticmethod(euler_one_qubit_decomposer.params_xzx)
     _params_u3 = staticmethod(euler_one_qubit_decomposer.params_u3)
     _params_u1x = staticmethod(euler_one_qubit_decomposer.params_u1x)
+
+
+def decompose_one_qubit(unitary, basis='U3', simplify=True, atol=DEFAULT_ATOL, use_dag=False):
+    """分解单量子比特门为指定基的电路。
+
+    这是一个简化的接口函数，用于方便地调用单量子比特门分解功能。
+
+    参数:
+        unitary: 1-qubit 幺正矩阵，可以是 Operator 对象、Gate 对象或 numpy 数组
+        basis: 分解基，支持 'U3', 'PSX', 'ZSXX', 'ZSX', 'U321', 'U1X', 'RR', 
+              'ZYZ', 'ZXZ', 'XYX', 'XZX' 等 [默认: 'U3']
+        simplify: 是否简化分解结果，减少门的数量 [默认: True]
+        atol: 角度检查的绝对容差，用于简化电路时 [默认: 1e-12]
+        use_dag: 如果为 True，输出将是 DAGCircuit 对象，否则是 QuantumCircuit 对象 [默认: False]
+
+    返回:
+        QuantumCircuit 或 DAGCircuit: 分解后的单量子比特门电路
+
+    示例:
+        >>> import numpy as np
+        >>> from qiskit.synthesis.one_qubit import decompose_one_qubit
+        >>> 
+        >>> # 创建一个 Pauli X 门的幺正矩阵
+        >>> x_matrix = np.array([[0, 1], [1, 0]])
+        >>> 
+        >>> # 分解为 U3 基
+        >>> circuit = decompose_one_qubit(x_matrix, basis='U3')
+        >>> print(circuit)
+        
+        >>> # 分解为 ZYZ 欧拉角基
+        >>> circuit_zyz = decompose_one_qubit(x_matrix, basis='ZYZ')
+        >>> print(circuit_zyz)
+    """
+    decomposer = OneQubitEulerDecomposer(basis=basis, use_dag=use_dag)
+    return decomposer(unitary, simplify=simplify, atol=atol)

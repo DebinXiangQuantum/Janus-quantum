@@ -605,3 +605,97 @@ def synth_c3x() -> QuantumCircuit:
 def synth_c4x() -> QuantumCircuit:
     """Efficient synthesis of 4-controlled X-gate."""
     return QuantumCircuit._from_circuit_data(c4x_rs())
+
+
+def decompose_multi_control_toffoli(
+    num_ctrl_qubits: int,
+    method: str = "noaux",
+    num_ancilla_qubits: int = None,
+    ancilla_type: str = "clean",
+    **kwargs
+) -> QuantumCircuit:
+    """
+    统一的多控制Toffoli门分解接口函数，支持多种分解方法。
+    
+    Args:
+        num_ctrl_qubits: 控制量子比特的数量（不包括目标量子比特）。
+        method: 分解方法，可选值包括：
+            - "noaux": 无辅助量子比特（默认）
+            - "gray": Gray码分解
+            - "b95": Barenco等人的方法（1个干净辅助量子比特）
+            - "i15": Iten等人的方法（多个脏辅助量子比特）
+            - "m15": Maslov的方法（多个干净辅助量子比特）
+            - "kg24": Khattar和Gidney的方法（1或2个辅助量子比特）
+            - "hp24": Huang和Palsberg的方法（无辅助量子比特，线性门数）
+            - "v24": Vale等人的方法（无辅助量子比特，二次门数）
+        num_ancilla_qubits: 辅助量子比特的数量（如果方法支持）。
+            - 当method="kg24"时，可选1或2
+        ancilla_type: 辅助量子比特类型，可选"clean"或"dirty"（如果方法支持）。
+        **kwargs: 传递给具体分解函数的额外参数。
+    
+    Returns:
+        分解后的量子电路。
+    
+    Raises:
+        ValueError: 当选择的方法不支持或参数组合无效时。
+    
+    Example:
+        from qiskit.synthesis.multi_controlled import decompose_multi_control_toffoli
+        
+        # 使用无辅助量子比特的默认方法分解3控制Toffoli门
+        circuit1 = decompose_multi_control_toffoli(num_ctrl_qubits=3)
+        
+        # 使用1个干净辅助量子比特的Khattar-Gidney方法分解4控制Toffoli门
+        circuit2 = decompose_multi_control_toffoli(num_ctrl_qubits=4, method="kg24", num_ancilla_qubits=1)
+        
+        # 使用2个脏辅助量子比特的Khattar-Gidney方法分解5控制Toffoli门
+        circuit3 = decompose_multi_control_toffoli(num_ctrl_qubits=5, method="kg24", num_ancilla_qubits=2, ancilla_type="dirty")
+    """
+    # 处理特殊情况：特定控制数量的优化实现
+    if num_ctrl_qubits == 3 and method != "custom":
+        return synth_c3x()
+    elif num_ctrl_qubits == 4 and method != "custom":
+        return synth_c4x()
+    
+    # 根据方法选择合适的分解函数
+    if method in ["noaux", "hp24"]:
+        # 默认使用Huang-Palsberg 2024的无辅助量子比特方法（线性门数）
+        return synth_mcx_noaux_hp24(num_ctrl_qubits, **kwargs)
+    elif method == "v24":
+        # Vale等人2024的无辅助量子比特方法（二次门数）
+        return synth_mcx_noaux_v24(num_ctrl_qubits, **kwargs)
+    elif method == "gray":
+        # Gray码分解方法
+        return synth_mcx_gray_code(num_ctrl_qubits, **kwargs)
+    elif method == "b95":
+        # Barenco等人1995的方法（1个干净辅助量子比特）
+        return synth_mcx_1_clean_b95(num_ctrl_qubits, **kwargs)
+    elif method == "i15":
+        # Iten等人2015的方法（多个脏辅助量子比特）
+        return synth_mcx_n_dirty_i15(num_ctrl_qubits, **kwargs)
+    elif method == "m15":
+        # Maslov 2015的方法（多个干净辅助量子比特）
+        return synth_mcx_n_clean_m15(num_ctrl_qubits, **kwargs)
+    elif method == "kg24":
+        # Khattar和Gidney 2024的方法
+        if num_ancilla_qubits is None:
+            num_ancilla_qubits = 1  # 默认使用1个辅助量子比特
+        
+        if num_ancilla_qubits == 1:
+            if ancilla_type == "clean":
+                return synth_mcx_1_clean_kg24(num_ctrl_qubits, **kwargs)
+            elif ancilla_type == "dirty":
+                return synth_mcx_1_dirty_kg24(num_ctrl_qubits, **kwargs)
+            else:
+                raise ValueError(f"Invalid ancilla_type: {ancilla_type}. Must be 'clean' or 'dirty'.")
+        elif num_ancilla_qubits == 2:
+            if ancilla_type == "clean":
+                return synth_mcx_2_clean_kg24(num_ctrl_qubits, **kwargs)
+            elif ancilla_type == "dirty":
+                return synth_mcx_2_dirty_kg24(num_ctrl_qubits, **kwargs)
+            else:
+                raise ValueError(f"Invalid ancilla_type: {ancilla_type}. Must be 'clean' or 'dirty'.")
+        else:
+            raise ValueError(f"Invalid num_ancilla_qubits for kg24 method: {num_ancilla_qubits}. Must be 1 or 2.")
+    else:
+        raise ValueError(f"Invalid method: {method}. Available methods are: 'noaux', 'gray', 'b95', 'i15', 'm15', 'kg24', 'hp24', 'v24'.")
