@@ -1,49 +1,155 @@
 """
-Janus 标准门库
+Janus 标准量子门库
+
 """
 from .standard_gates import (
-    # 单比特门
-    HGate,
+    # 单比特 Pauli 门
+    IGate,
     XGate,
     YGate,
     ZGate,
+    # Hadamard 和 Clifford 门
+    HGate,
     SGate,
     SdgGate,
     TGate,
     TdgGate,
+    SXGate,
+    SXdgGate,
+    # 单比特旋转门
     RXGate,
     RYGate,
     RZGate,
+    PhaseGate,
+    U1Gate,
+    U2Gate,
+    U3Gate,
     UGate,
+    RGate,
+    # 两比特旋转门
+    RXXGate,
+    RYYGate,
+    RZZGate,
+    RZXGate,
     # 两比特门
     CXGate,
+    CYGate,
     CZGate,
-    CRZGate,
+    CHGate,
+    CSGate,
+    CSdgGate,
+    CSXGate,
+    DCXGate,
+    ECRGate,
     SwapGate,
+    iSwapGate,
+    # 受控旋转门
+    CRXGate,
+    CRYGate,
+    CRZGate,
+    CPhaseGate,
+    CU1Gate,
+    CU3Gate,
+    CUGate,
+    # 三比特及多比特门
+    CCXGate,
+    CCZGate,
+    CSwapGate,
+    RCCXGate,
+    RC3XGate,
+    C3XGate,
+    C4XGate,
+    # 特殊两比特门
+    XXMinusYYGate,
+    XXPlusYYGate,
     # 特殊操作
     Barrier,
     Measure,
     Reset,
+    Delay,
+    GlobalPhaseGate,
+    # 多控制门
+    C3SXGate,
+    MCXGate,
+    MCXGrayCode,
+    MCXRecursive,
+    MCXVChain,
+    MCPhaseGate,
+    MCU1Gate,
 )
 
 __all__ = [
-    'HGate',
+    # 单比特 Pauli 门
+    'IGate',
     'XGate',
     'YGate',
     'ZGate',
+    # Hadamard 和 Clifford 门
+    'HGate',
     'SGate',
     'SdgGate',
     'TGate',
     'TdgGate',
+    'SXGate',
+    'SXdgGate',
+    # 单比特旋转门
     'RXGate',
     'RYGate',
     'RZGate',
+    'PhaseGate',
+    'U1Gate',
+    'U2Gate',
+    'U3Gate',
     'UGate',
+    'RGate',
+    # 两比特旋转门
+    'RXXGate',
+    'RYYGate',
+    'RZZGate',
+    'RZXGate',
+    # 两比特门
     'CXGate',
+    'CYGate',
     'CZGate',
-    'CRZGate',
+    'CHGate',
+    'CSGate',
+    'CSdgGate',
+    'CSXGate',
+    'DCXGate',
+    'ECRGate',
     'SwapGate',
+    'iSwapGate',
+    # 受控旋转门
+    'CRXGate',
+    'CRYGate',
+    'CRZGate',
+    'CPhaseGate',
+    'CU1Gate',
+    'CU3Gate',
+    'CUGate',
+    # 三比特及多比特门
+    'CCXGate',
+    'CCZGate',
+    'CSwapGate',
+    'RCCXGate',
+    'RC3XGate',
+    'C3XGate',
+    'C4XGate',
+    # 特殊两比特门
+    'XXMinusYYGate',
+    'XXPlusYYGate',
+    # 特殊操作
     'Barrier',
     'Measure',
     'Reset',
+    'Delay',
+    'GlobalPhaseGate',
+    # 多控制门
+    'C3SXGate',
+    'MCXGate',
+    'MCXGrayCode',
+    'MCXRecursive',
+    'MCXVChain',
+    'MCPhaseGate',
+    'MCU1Gate',
 ]

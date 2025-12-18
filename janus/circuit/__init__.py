@@ -11,7 +11,12 @@ from .circuit import Circuit
 from .qubit import Qubit, QuantumRegister
 from .clbit import Clbit, ClassicalRegister
 from .parameter import Parameter, ParameterExpression
-from .dag import DAGCircuit, DAGNode, circuit_to_dag, dag_to_circuit
+from .dag import (
+    DAGCircuit, DAGNode, DAGOpNode, DAGInNode, DAGOutNode,
+    circuit_to_dag, dag_to_circuit,
+    DAGDependency, circuit_to_dag_dependency, dag_dependency_to_circuit,
+    BlockCollector, BlockSplitter, BlockCollapser, split_block_into_layers
+)
 
 # 标准门
 from .library import (
@@ -53,8 +58,20 @@ __all__ = [
     # DAG
     'DAGCircuit',
     'DAGNode',
+    'DAGOpNode',
+    'DAGInNode',
+    'DAGOutNode',
     'circuit_to_dag',
     'dag_to_circuit',
+    # DAGDependency (交换性分析)
+    'DAGDependency',
+    'circuit_to_dag_dependency',
+    'dag_dependency_to_circuit',
+    # 块操作
+    'BlockCollector',
+    'BlockSplitter',
+    'BlockCollapser',
+    'split_block_into_layers',
     # 标准门
     'HGate',
     'XGate',

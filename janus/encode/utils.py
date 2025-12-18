@@ -2,7 +2,6 @@
 编码工具函数模块
 
 提供所有编码方法所需的辅助函数
-不依赖 qiskit
 """
 import numpy as np
 from math import log2, ceil, floor, pi, acos, sqrt

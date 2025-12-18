@@ -192,7 +192,7 @@ class Circuit:
     # ==================== 标准门方法 ====================
     
     def h(self, qubit: int, params: Optional[List] = None) -> 'Circuit':
-        """添加 Hadamard 门"""
+        """添加 Hadamard 门，可选参数"""
         from .library.standard_gates import HGate
         gate = HGate()
         if params:
@@ -200,7 +200,7 @@ class Circuit:
         return self._add_gate(gate, [qubit])
     
     def x(self, qubit: int, params: Optional[List] = None) -> 'Circuit':
-        """添加 Pauli-X 门"""
+        """添加 Pauli-X 门，可选参数"""
         from .library.standard_gates import XGate
         gate = XGate()
         if params:
@@ -208,7 +208,7 @@ class Circuit:
         return self._add_gate(gate, [qubit])
     
     def y(self, qubit: int, params: Optional[List] = None) -> 'Circuit':
-        """添加 Pauli-Y 门"""
+        """添加 Pauli-Y 门，可选参数"""
         from .library.standard_gates import YGate
         gate = YGate()
         if params:
@@ -216,7 +216,7 @@ class Circuit:
         return self._add_gate(gate, [qubit])
     
     def z(self, qubit: int, params: Optional[List] = None) -> 'Circuit':
-        """添加 Pauli-Z 门"""
+        """添加 Pauli-Z 门，可选参数"""
         from .library.standard_gates import ZGate
         gate = ZGate()
         if params:
@@ -224,7 +224,7 @@ class Circuit:
         return self._add_gate(gate, [qubit])
     
     def s(self, qubit: int, params: Optional[List] = None) -> 'Circuit':
-        """添加 S 门 (sqrt(Z))"""
+        """添加 S 门 (sqrt(Z))，可选参数"""
         from .library.standard_gates import SGate
         gate = SGate()
         if params:
@@ -232,94 +232,229 @@ class Circuit:
         return self._add_gate(gate, [qubit])
     
     def t(self, qubit: int, params: Optional[List] = None) -> 'Circuit':
-        """添加 T 门 (sqrt(S))"""
+        """添加 T 门 (sqrt(S))，可选参数"""
         from .library.standard_gates import TGate
         gate = TGate()
         if params:
             gate.params = params
         return self._add_gate(gate, [qubit])
     
-    def rx(self, theta: float, qubit: int, params: Optional[List] = None) -> 'Circuit':
+    def rx(self, theta: float, qubit: int) -> 'Circuit':
         """添加 RX 旋转门"""
         from .library.standard_gates import RXGate
-        gate = RXGate(theta)
-        if params:
-            gate.params = params
-        return self._add_gate(gate, [qubit])
+        return self._add_gate(RXGate(theta), [qubit])
     
-    def ry(self, theta: float, qubit: int, params: Optional[List] = None) -> 'Circuit':
+    def ry(self, theta: float, qubit: int) -> 'Circuit':
         """添加 RY 旋转门"""
         from .library.standard_gates import RYGate
-        gate = RYGate(theta)
-        if params:
-            gate.params = params
-        return self._add_gate(gate, [qubit])
+        return self._add_gate(RYGate(theta), [qubit])
     
-    def rz(self, theta: float, qubit: int, params: Optional[List] = None) -> 'Circuit':
+    def rz(self, theta: float, qubit: int) -> 'Circuit':
         """添加 RZ 旋转门"""
         from .library.standard_gates import RZGate
-        gate = RZGate(theta)
-        if params:
-            gate.params = params
-        return self._add_gate(gate, [qubit])
+        return self._add_gate(RZGate(theta), [qubit])
     
-    def u(self, theta: float, phi: float, lam: float, qubit: int, params: Optional[List] = None) -> 'Circuit':
+    def u(self, theta: float, phi: float, lam: float, qubit: int) -> 'Circuit':
         """添加 U 门（通用单比特门）"""
         from .library.standard_gates import UGate
-        gate = UGate(theta, phi, lam)
-        if params:
-            gate.params = params
-        return self._add_gate(gate, [qubit])
+        return self._add_gate(UGate(theta, phi, lam), [qubit])
     
-    def cx(self, control: int, target: int, params: Optional[List] = None) -> 'Circuit':
+    def cx(self, control: int, target: int) -> 'Circuit':
         """添加 CNOT (CX) 门"""
         from .library.standard_gates import CXGate
-        gate = CXGate()
-        if params:
-            gate.params = params
-        return self._add_gate(gate, [control, target])
+        return self._add_gate(CXGate(), [control, target])
     
-    def cz(self, control: int, target: int, params: Optional[List] = None) -> 'Circuit':
+    def cz(self, control: int, target: int) -> 'Circuit':
         """添加 CZ 门"""
         from .library.standard_gates import CZGate
-        gate = CZGate()
-        if params:
-            gate.params = params
-        return self._add_gate(gate, [control, target])
+        return self._add_gate(CZGate(), [control, target])
     
-    def crz(self, theta: float, control: int, target: int, params: Optional[List] = None) -> 'Circuit':
+    def crz(self, theta: float, control: int, target: int) -> 'Circuit':
         """添加 CRZ 门"""
         from .library.standard_gates import CRZGate
-        gate = CRZGate(theta)
-        if params:
-            gate.params = params
-        return self._add_gate(gate, [control, target])
-
-    def mcry(self, theta: float, controls: List[int], target: int, params: Optional[List] = None) -> 'Circuit':
-        """添加多控 RY 门（controls... -> target）"""
-        from .library.standard_gates import MCRYGate
-        if not controls:
-            raise ValueError("mcry 需要至少 1 个控制比特")
-        gate = MCRYGate(theta, num_controls=len(controls))
-        if params:
-            gate.params = params
-        return self._add_gate(gate, controls + [target])
+        return self._add_gate(CRZGate(theta), [control, target])
     
-    def swap(self, qubit1: int, qubit2: int, params: Optional[List] = None) -> 'Circuit':
+    def swap(self, qubit1: int, qubit2: int) -> 'Circuit':
         """添加 SWAP 门"""
         from .library.standard_gates import SwapGate
-        gate = SwapGate()
-        if params:
-            gate.params = params
-        return self._add_gate(gate, [qubit1, qubit2])
+        return self._add_gate(SwapGate(), [qubit1, qubit2])
 
-    def cswap(self, control: int, qubit1: int, qubit2: int, params: Optional[List] = None) -> 'Circuit':
-        """添加受控 SWAP（Fredkin）门：control, qubit1, qubit2"""
-        from .library.standard_gates import CSWAPGate
-        gate = CSWAPGate()
-        if params:
-            gate.params = params
-        return self._add_gate(gate, [control, qubit1, qubit2])
+    def cswap(self, control: int, qubit1: int, qubit2: int) -> 'Circuit':
+        """添加受控 SWAP（Fredkin）门"""
+        from .library.standard_gates import CSwapGate
+        return self._add_gate(CSwapGate(), [control, qubit1, qubit2])
+    
+    # ==================== 扩展门方法 ====================
+    
+    def id(self, qubit: int) -> 'Circuit':
+        """添加 Identity 门"""
+        from .library.standard_gates import IGate
+        return self._add_gate(IGate(), [qubit])
+    
+    def sdg(self, qubit: int) -> 'Circuit':
+        """添加 S† 门"""
+        from .library.standard_gates import SdgGate
+        return self._add_gate(SdgGate(), [qubit])
+    
+    def tdg(self, qubit: int) -> 'Circuit':
+        """添加 T† 门"""
+        from .library.standard_gates import TdgGate
+        return self._add_gate(TdgGate(), [qubit])
+    
+    def sx(self, qubit: int) -> 'Circuit':
+        """添加 sqrt(X) 门"""
+        from .library.standard_gates import SXGate
+        return self._add_gate(SXGate(), [qubit])
+    
+    def sxdg(self, qubit: int) -> 'Circuit':
+        """添加 sqrt(X)† 门"""
+        from .library.standard_gates import SXdgGate
+        return self._add_gate(SXdgGate(), [qubit])
+    
+    def p(self, lam: float, qubit: int) -> 'Circuit':
+        """添加 Phase 门"""
+        from .library.standard_gates import PhaseGate
+        return self._add_gate(PhaseGate(lam), [qubit])
+    
+    def u1(self, lam: float, qubit: int) -> 'Circuit':
+        """添加 U1 门"""
+        from .library.standard_gates import U1Gate
+        return self._add_gate(U1Gate(lam), [qubit])
+    
+    def u2(self, phi: float, lam: float, qubit: int) -> 'Circuit':
+        """添加 U2 门"""
+        from .library.standard_gates import U2Gate
+        return self._add_gate(U2Gate(phi, lam), [qubit])
+    
+    def u3(self, theta: float, phi: float, lam: float, qubit: int) -> 'Circuit':
+        """添加 U3 门"""
+        from .library.standard_gates import U3Gate
+        return self._add_gate(U3Gate(theta, phi, lam), [qubit])
+    
+    def r(self, theta: float, phi: float, qubit: int) -> 'Circuit':
+        """添加 R 门"""
+        from .library.standard_gates import RGate
+        return self._add_gate(RGate(theta, phi), [qubit])
+    
+    def cy(self, control: int, target: int) -> 'Circuit':
+        """添加 CY 门"""
+        from .library.standard_gates import CYGate
+        return self._add_gate(CYGate(), [control, target])
+    
+    def ch(self, control: int, target: int) -> 'Circuit':
+        """添加 CH 门"""
+        from .library.standard_gates import CHGate
+        return self._add_gate(CHGate(), [control, target])
+    
+    def cs(self, control: int, target: int) -> 'Circuit':
+        """添加 CS 门"""
+        from .library.standard_gates import CSGate
+        return self._add_gate(CSGate(), [control, target])
+    
+    def csdg(self, control: int, target: int) -> 'Circuit':
+        """添加 CS† 门"""
+        from .library.standard_gates import CSdgGate
+        return self._add_gate(CSdgGate(), [control, target])
+    
+    def csx(self, control: int, target: int) -> 'Circuit':
+        """添加 CSX 门"""
+        from .library.standard_gates import CSXGate
+        return self._add_gate(CSXGate(), [control, target])
+    
+    def dcx(self, qubit1: int, qubit2: int) -> 'Circuit':
+        """添加 DCX 门"""
+        from .library.standard_gates import DCXGate
+        return self._add_gate(DCXGate(), [qubit1, qubit2])
+    
+    def ecr(self, qubit1: int, qubit2: int) -> 'Circuit':
+        """添加 ECR 门"""
+        from .library.standard_gates import ECRGate
+        return self._add_gate(ECRGate(), [qubit1, qubit2])
+    
+    def iswap(self, qubit1: int, qubit2: int) -> 'Circuit':
+        """添加 iSWAP 门"""
+        from .library.standard_gates import iSwapGate
+        return self._add_gate(iSwapGate(), [qubit1, qubit2])
+    
+    def crx(self, theta: float, control: int, target: int) -> 'Circuit':
+        """添加 CRX 门"""
+        from .library.standard_gates import CRXGate
+        return self._add_gate(CRXGate(theta), [control, target])
+    
+    def cry(self, theta: float, control: int, target: int) -> 'Circuit':
+        """添加 CRY 门"""
+        from .library.standard_gates import CRYGate
+        return self._add_gate(CRYGate(theta), [control, target])
+    
+    def cp(self, theta: float, control: int, target: int) -> 'Circuit':
+        """添加 CPhase 门"""
+        from .library.standard_gates import CPhaseGate
+        return self._add_gate(CPhaseGate(theta), [control, target])
+    
+    def cu1(self, lam: float, control: int, target: int) -> 'Circuit':
+        """添加 CU1 门"""
+        from .library.standard_gates import CU1Gate
+        return self._add_gate(CU1Gate(lam), [control, target])
+    
+    def cu3(self, theta: float, phi: float, lam: float, control: int, target: int) -> 'Circuit':
+        """添加 CU3 门"""
+        from .library.standard_gates import CU3Gate
+        return self._add_gate(CU3Gate(theta, phi, lam), [control, target])
+    
+    def cu(self, theta: float, phi: float, lam: float, gamma: float, control: int, target: int) -> 'Circuit':
+        """添加 CU 门"""
+        from .library.standard_gates import CUGate
+        return self._add_gate(CUGate(theta, phi, lam, gamma), [control, target])
+    
+    def rxx(self, theta: float, qubit1: int, qubit2: int) -> 'Circuit':
+        """添加 RXX 门"""
+        from .library.standard_gates import RXXGate
+        return self._add_gate(RXXGate(theta), [qubit1, qubit2])
+    
+    def ryy(self, theta: float, qubit1: int, qubit2: int) -> 'Circuit':
+        """添加 RYY 门"""
+        from .library.standard_gates import RYYGate
+        return self._add_gate(RYYGate(theta), [qubit1, qubit2])
+    
+    def rzz(self, theta: float, qubit1: int, qubit2: int) -> 'Circuit':
+        """添加 RZZ 门"""
+        from .library.standard_gates import RZZGate
+        return self._add_gate(RZZGate(theta), [qubit1, qubit2])
+    
+    def rzx(self, theta: float, qubit1: int, qubit2: int) -> 'Circuit':
+        """添加 RZX 门"""
+        from .library.standard_gates import RZXGate
+        return self._add_gate(RZXGate(theta), [qubit1, qubit2])
+    
+    def ccx(self, ctrl1: int, ctrl2: int, target: int) -> 'Circuit':
+        """添加 CCX (Toffoli) 门"""
+        from .library.standard_gates import CCXGate
+        return self._add_gate(CCXGate(), [ctrl1, ctrl2, target])
+    
+    def ccz(self, ctrl1: int, ctrl2: int, target: int) -> 'Circuit':
+        """添加 CCZ 门"""
+        from .library.standard_gates import CCZGate
+        return self._add_gate(CCZGate(), [ctrl1, ctrl2, target])
+    
+    def c3x(self, ctrl1: int, ctrl2: int, ctrl3: int, target: int) -> 'Circuit':
+        """添加 C3X 门"""
+        from .library.standard_gates import C3XGate
+        return self._add_gate(C3XGate(), [ctrl1, ctrl2, ctrl3, target])
+    
+    def c4x(self, ctrl1: int, ctrl2: int, ctrl3: int, ctrl4: int, target: int) -> 'Circuit':
+        """添加 C4X 门"""
+        from .library.standard_gates import C4XGate
+        return self._add_gate(C4XGate(), [ctrl1, ctrl2, ctrl3, ctrl4, target])
+    
+    def reset(self, qubit: int) -> 'Circuit':
+        """添加 Reset 操作"""
+        from .library.standard_gates import Reset
+        return self._add_gate(Reset(), [qubit])
+    
+    def delay(self, duration: float, qubit: int, unit: str = 'dt') -> 'Circuit':
+        """添加 Delay 操作"""
+        from .library.standard_gates import Delay
+        return self._add_gate(Delay(duration, unit), [qubit])
     
     def barrier(self, qubits: Optional[List[int]] = None) -> 'Circuit':
         """添加 barrier（用于分隔电路层）"""
@@ -446,6 +581,32 @@ class Circuit:
         """检查电路是否包含未绑定的参数"""
         return len(self._parameters) > 0
     
+    def bind_parameters(
+        self,
+        parameters: Dict[Parameter, float],
+        inplace: bool = False
+    ) -> 'Circuit':
+        """
+        绑定参数值（assign_parameters 的别名）
+        
+        Args:
+            parameters: 参数到值的映射
+            inplace: 是否原地修改
+        
+        Returns:
+            绑定参数后的电路
+        
+        Example:
+            theta = Parameter('theta')
+            qc = Circuit(2)
+            qc.rx(theta, 0)
+            qc.ry(theta, 1)
+            
+            # 绑定参数
+            bound_qc = qc.bind_parameters({theta: np.pi/2})
+        """
+        return self.assign_parameters(parameters, inplace)
+    
     def compose(self, other: 'Circuit', qubits: Optional[List[int]] = None) -> 'Circuit':
         """
         将另一个电路组合到当前电路
@@ -476,7 +637,8 @@ class Circuit:
     
     def inverse(self) -> 'Circuit':
         """返回电路的逆"""
-        new_circuit = Circuit(self._n_qubits, f"{self._name}_inv" if self._name else None)
+        new_name = f"{self._name}_inv" if self._name else None
+        new_circuit = Circuit(self._n_qubits, self._n_clbits, new_name)
         for inst in reversed(self._instructions):
             inv_gate = inst.operation.inverse()
             new_circuit.append(inv_gate, inst.qubits, inst.clbits)
@@ -503,7 +665,6 @@ class Circuit:
     
     def to_tuple_list(self) -> List[tuple]:
         """
-        转换为元组列表 (Qiskit 风格格式)
         
         Returns:
             [('h', [0], []), ('cx', [0, 1], []), ...]
@@ -541,15 +702,27 @@ class Circuit:
             lines.append(f"  {i}: {inst.operation} on {inst.qubits}")
         return "\n".join(lines)
     
-    def draw(self, output: str = 'text') -> str:
+    def draw(self, output: str = 'text', filename: str = None, figsize: tuple = None, dpi: int = 150):
         """
         绘制电路
         
         Args:
-            output: 输出格式 ('text' 或 'mpl')
+            output: 输出格式 ('text', 'mpl', 'png')
+            filename: 保存文件名（仅 'png' 模式）
+            figsize: 图像大小 (width, height)，默认自动计算
+            dpi: 图像分辨率，默认 150
+        
+        Returns:
+            'text' 模式返回字符串，'mpl' 模式返回 Figure 对象
         """
         if output == 'text':
             return self._draw_text()
+        elif output in ('mpl', 'png'):
+            fig = self._draw_mpl(figsize=figsize)
+            if output == 'png' and filename:
+                fig.savefig(filename, dpi=dpi, bbox_inches='tight', facecolor='white')
+                print(f"Circuit saved to {filename}")
+            return fig
         else:
             raise NotImplementedError(f"Output format '{output}' not implemented")
     
@@ -583,10 +756,9 @@ class Circuit:
             bx_mid_l, bx_mid_r = "┤", "├"
             bx_top_conn = "┬"
 
-        cell_w =  nine = 9
-        cell_w = 9  # 必须为奇数，方便定义“中心列”
+        cell_w = 15  # 增加宽度以容纳参数
         center = cell_w // 2
-        box_w = 5  # 盒子宽度（必须为奇数）
+        box_w = 11  # 盒子宽度增加以容纳参数
         box_center = box_w // 2
         box_start = center - box_center
         box_end = box_start + box_w - 1
@@ -597,6 +769,63 @@ class Circuit:
         def _seg_wire_mid() -> list[str]:
             seg = [ch_wire] * cell_w
             return seg
+
+        def _format_gate_label(name: str, params: list) -> str:
+            """格式化门标签，包含参数"""
+            if not params:
+                return name
+            import math
+            max_label_len = box_w - 2  # 盒子内可用宽度
+            param_strs = []
+            for p in params:
+                if isinstance(p, (int, float)):
+                    pi_mult = p / math.pi
+                    if abs(pi_mult - round(pi_mult)) < 0.01 and abs(round(pi_mult)) <= 4:
+                        mult = round(pi_mult)
+                        if mult == 0:
+                            param_strs.append("0")
+                        elif mult == 1:
+                            param_strs.append("pi")
+                        elif mult == -1:
+                            param_strs.append("-pi")
+                        else:
+                            param_strs.append(f"{mult}pi")
+                    else:
+                        # 根据数值大小选择精度
+                        if abs(p) < 10:
+                            param_strs.append(f"{p:.2f}")
+                        else:
+                            param_strs.append(f"{p:.1f}")
+                else:
+                    param_strs.append(str(p)[:4])
+            
+            # 构建标签并检查长度
+            label = name + "(" + ",".join(param_strs) + ")"
+            if len(label) <= max_label_len:
+                return label
+            
+            # 如果太长，尝试缩短参数
+            short_params = []
+            for p in params:
+                if isinstance(p, (int, float)):
+                    pi_mult = p / math.pi
+                    if abs(pi_mult - round(pi_mult)) < 0.01:
+                        mult = round(pi_mult)
+                        if mult == 0:
+                            short_params.append("0")
+                        elif mult == 1:
+                            short_params.append("π")
+                        elif mult == -1:
+                            short_params.append("-π")
+                        else:
+                            short_params.append(f"{mult}π")
+                    else:
+                        short_params.append(f"{p:.1f}")
+                else:
+                    short_params.append(str(p)[:3])
+            
+            label = name + "(" + ",".join(short_params) + ")"
+            return label[:max_label_len]
 
         def _put(seg: list[str], col: int, s: str):
             for k, ch in enumerate(s):
@@ -656,11 +885,19 @@ class Circuit:
             segs_bot = [_blank_seg() for _ in range(self._n_qubits)]
 
             def _draw_vertical_span(lo_q: int, hi_q: int):
+                """在 lo_q 和 hi_q 之间画竖线连接"""
                 for q in range(lo_q, hi_q + 1):
-                    # 允许在 wire 上画竖线（让连接“穿过”中间线）
-                    segs_top[q][center] = ch_v if segs_top[q][center] == " " else segs_top[q][center]
-                    segs_mid[q][center] = ch_v
-                    segs_bot[q][center] = ch_v if segs_bot[q][center] == " " else segs_bot[q][center]
+                    if q == lo_q:
+                        # 最上面的比特：只在下方画竖线
+                        segs_bot[q][center] = ch_v
+                    elif q == hi_q:
+                        # 最下面的比特：只在上方画竖线
+                        segs_top[q][center] = ch_v
+                    else:
+                        # 中间的比特：上下都画竖线，穿过 wire
+                        segs_top[q][center] = ch_v
+                        segs_mid[q][center] = ch_v
+                        segs_bot[q][center] = ch_v
 
             for inst in layer:
                 qs = list(inst.qubits)
@@ -697,18 +934,50 @@ class Circuit:
                         for q in qs:
                             _draw_box(segs_top[q], segs_mid[q], segs_bot[q], name[:2], controlled=False)
 
-                elif name in ("cx", "cz", "crz"):
+                elif name in ("cx", "cz", "crz", "crx", "cry", "cp", "cu", "cu1", "cu3", "ch", "cy"):
+                    # 单控制门
                     if len(qs) == 2:
                         c, t = qs
                         lo, hi = min(qs), max(qs)
                         _draw_vertical_span(lo, hi)
                         segs_mid[c][center] = ch_ctrl
-                        _draw_box(segs_top[t], segs_mid[t], segs_bot[t], "x" if name == "cx" else "z" if name == "cz" else "rz", controlled=False)
+                        # 目标门标签
+                        params = inst.params if hasattr(inst, 'params') else []
+                        if name == "cx":
+                            target_label = "X"
+                        elif name == "cz":
+                            target_label = "Z"
+                        elif name == "ch":
+                            target_label = "H"
+                        elif name == "cy":
+                            target_label = "Y"
+                        else:
+                            # 受控旋转门，显示参数
+                            base_name = name[1:] if name.startswith('c') else name
+                            target_label = _format_gate_label(base_name, params)
+                        _draw_box(segs_top[t], segs_mid[t], segs_bot[t], target_label, controlled=False)
                     else:
                         lo, hi = min(qs), max(qs)
                         _draw_vertical_span(lo, hi)
                         for q in qs:
                             _draw_box(segs_top[q], segs_mid[q], segs_bot[q], name[:2], controlled=False)
+                
+                elif name in ("ccx", "ccz", "c3x", "c4x"):
+                    # 多控制门：前面都是控制，最后一个是目标
+                    controls = qs[:-1]
+                    target = qs[-1]
+                    lo, hi = min(qs), max(qs)
+                    _draw_vertical_span(lo, hi)
+                    for c in controls:
+                        segs_mid[c][center] = ch_ctrl
+                    # 目标门
+                    if name == "ccx" or name == "c3x" or name == "c4x":
+                        target_label = "X"
+                    elif name == "ccz":
+                        target_label = "Z"
+                    else:
+                        target_label = name[-1].upper()
+                    _draw_box(segs_top[target], segs_mid[target], segs_bot[target], target_label, controlled=False)
 
                 elif name == "swap":
                     if len(qs) == 2:
@@ -724,16 +993,18 @@ class Circuit:
                             segs_mid[q][center] = ch_swap
 
                 else:
-                    # 单比特门：画盒子
+                    # 单比特门：画盒子，显示参数
+                    params = inst.params if hasattr(inst, 'params') else []
+                    label = _format_gate_label(name, params)
                     if len(qs) == 1:
                         q = qs[0]
-                        _draw_box(segs_top[q], segs_mid[q], segs_bot[q], name[:2], controlled=False)
+                        _draw_box(segs_top[q], segs_mid[q], segs_bot[q], label, controlled=False)
                     else:
                         # 多比特未知门：先画竖线，再在参与 qubit 上画小盒子
                         lo, hi = min(qs), max(qs)
                         _draw_vertical_span(lo, hi)
                         for q in qs:
-                            _draw_box(segs_top[q], segs_mid[q], segs_bot[q], name[:2], controlled=False)
+                            _draw_box(segs_top[q], segs_mid[q], segs_bot[q], label, controlled=False)
 
             # 拼接这一层
             for q in range(self._n_qubits):
@@ -742,6 +1013,173 @@ class Circuit:
                 rows[r_bot(q)] += "".join(segs_bot[q]) + " "
 
         return "\n".join(rows)
+    
+    def _draw_mpl(self, figsize: tuple = None):
+        """使用 matplotlib 绘制电路图"""
+        try:
+            import matplotlib.pyplot as plt
+            import matplotlib.patches as patches
+            from matplotlib.patches import FancyBboxPatch, Circle
+        except ImportError:
+            raise ImportError("matplotlib is required for PNG output. Install with: pip install matplotlib")
+        
+        # 计算图像大小
+        n_layers = len(self.layers)
+        if figsize is None:
+            width = max(6, n_layers * 1.5 + 2)
+            height = max(3, self._n_qubits * 0.8 + 1)
+            figsize = (width, height)
+        
+        fig, ax = plt.subplots(figsize=figsize)
+        ax.set_xlim(-0.5, n_layers + 0.5)
+        ax.set_ylim(-0.5, self._n_qubits - 0.5)
+        ax.set_aspect('equal')
+        ax.invert_yaxis()
+        ax.axis('off')
+        
+        # 绘制量子比特线和标签
+        for q in range(self._n_qubits):
+            ax.hlines(q, -0.3, n_layers + 0.3, colors='black', linewidth=1)
+            ax.text(-0.5, q, f'q{q}', ha='right', va='center', fontsize=10, fontweight='bold')
+        
+        # 门的样式
+        gate_color = '#E8F4FD'
+        ctrl_color = 'black'
+        box_width = 0.6
+        box_height = 0.5
+        
+        def format_param(p):
+            """格式化参数显示"""
+            import math
+            if isinstance(p, (int, float)):
+                pi_mult = p / math.pi
+                if abs(pi_mult - round(pi_mult)) < 0.01 and abs(round(pi_mult)) <= 4:
+                    mult = round(pi_mult)
+                    if mult == 0: return "0"
+                    elif mult == 1: return "π"
+                    elif mult == -1: return "-π"
+                    else: return f"{mult}π"
+                else:
+                    return f"{p:.2f}"
+            return str(p)[:4]
+        
+        def draw_gate_box(x, y, label, color=gate_color):
+            """绘制门的方框"""
+            rect = FancyBboxPatch(
+                (x - box_width/2, y - box_height/2),
+                box_width, box_height,
+                boxstyle="round,pad=0.02,rounding_size=0.1",
+                facecolor=color, edgecolor='black', linewidth=1.5
+            )
+            ax.add_patch(rect)
+            fontsize = 9 if len(label) <= 4 else 7 if len(label) <= 6 else 5
+            ax.text(x, y, label, ha='center', va='center', fontsize=fontsize, fontweight='bold')
+        
+        def draw_control(x, y):
+            """绘制控制点"""
+            circle = Circle((x, y), 0.08, facecolor=ctrl_color, edgecolor=ctrl_color)
+            ax.add_patch(circle)
+        
+        def draw_target_x(x, y):
+            """绘制 CNOT 目标 (⊕)"""
+            circle = Circle((x, y), 0.2, facecolor='white', edgecolor='black', linewidth=1.5)
+            ax.add_patch(circle)
+            ax.plot([x - 0.2, x + 0.2], [y, y], 'k-', linewidth=1.5)
+            ax.plot([x, x], [y - 0.2, y + 0.2], 'k-', linewidth=1.5)
+        
+        def draw_swap(x, y):
+            """绘制 SWAP 符号 (×)"""
+            size = 0.12
+            ax.plot([x - size, x + size], [y - size, y + size], 'k-', linewidth=2)
+            ax.plot([x - size, x + size], [y + size, y - size], 'k-', linewidth=2)
+        
+        # 绘制每一层的门
+        for layer_idx, layer in enumerate(self.layers):
+            x = layer_idx + 0.5
+            
+            for inst in layer:
+                qs = list(inst.qubits)
+                name = inst.name
+                params = inst.params if hasattr(inst, 'params') else []
+                
+                if not qs:
+                    continue
+                
+                # 构建标签
+                if params:
+                    param_str = ",".join(format_param(p) for p in params[:2])
+                    label = f"{name}({param_str})"
+                else:
+                    label = name.upper() if len(name) <= 2 else name
+                
+                if name == "cx":
+                    c, t = qs[0], qs[1]
+                    ax.vlines(x, min(c, t), max(c, t), colors='black', linewidth=1.5)
+                    draw_control(x, c)
+                    draw_target_x(x, t)
+                
+                elif name in ("cz", "cp"):
+                    c, t = qs[0], qs[1]
+                    ax.vlines(x, min(c, t), max(c, t), colors='black', linewidth=1.5)
+                    draw_control(x, c)
+                    draw_control(x, t)
+                
+                elif name in ("crz", "crx", "cry", "cu", "cu1", "cu3", "ch", "cy"):
+                    c, t = qs[0], qs[1]
+                    ax.vlines(x, min(c, t), max(c, t), colors='black', linewidth=1.5)
+                    draw_control(x, c)
+                    base_name = name[1:].upper() if name.startswith('c') else name.upper()
+                    if params:
+                        param_str = ",".join(format_param(p) for p in params[:1])
+                        target_label = f"{base_name}({param_str})"
+                    else:
+                        target_label = base_name
+                    draw_gate_box(x, t, target_label)
+                
+                elif name in ("ccx", "c3x", "c4x"):
+                    controls, target = qs[:-1], qs[-1]
+                    ax.vlines(x, min(qs), max(qs), colors='black', linewidth=1.5)
+                    for c in controls:
+                        draw_control(x, c)
+                    draw_target_x(x, target)
+                
+                elif name == "ccz":
+                    ax.vlines(x, min(qs), max(qs), colors='black', linewidth=1.5)
+                    for q in qs:
+                        draw_control(x, q)
+                
+                elif name == "swap":
+                    a, b = qs[0], qs[1]
+                    ax.vlines(x, min(a, b), max(a, b), colors='black', linewidth=1.5)
+                    draw_swap(x, a)
+                    draw_swap(x, b)
+                
+                elif name == "cswap":
+                    c, a, b = qs[0], qs[1], qs[2]
+                    ax.vlines(x, min(qs), max(qs), colors='black', linewidth=1.5)
+                    draw_control(x, c)
+                    draw_swap(x, a)
+                    draw_swap(x, b)
+                
+                elif name == "barrier":
+                    for q in qs:
+                        ax.axvline(x, color='gray', linestyle='--', linewidth=1, alpha=0.5)
+                
+                elif name == "measure":
+                    q = qs[0]
+                    draw_gate_box(x, q, "M", color='#FFE4B5')
+                
+                else:
+                    # 单比特门或其他门
+                    if len(qs) == 1:
+                        draw_gate_box(x, qs[0], label)
+                    else:
+                        ax.vlines(x, min(qs), max(qs), colors='black', linewidth=1.5)
+                        for q in qs:
+                            draw_gate_box(x, q, label)
+        
+        plt.tight_layout()
+        return fig
     
     def __len__(self) -> int:
         """返回层数"""
