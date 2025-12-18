@@ -294,6 +294,16 @@ class Circuit:
         if params:
             gate.params = params
         return self._add_gate(gate, [control, target])
+
+    def mcry(self, theta: float, controls: List[int], target: int, params: Optional[List] = None) -> 'Circuit':
+        """添加多控 RY 门（controls... -> target）"""
+        from .library.standard_gates import MCRYGate
+        if not controls:
+            raise ValueError("mcry 需要至少 1 个控制比特")
+        gate = MCRYGate(theta, num_controls=len(controls))
+        if params:
+            gate.params = params
+        return self._add_gate(gate, controls + [target])
     
     def swap(self, qubit1: int, qubit2: int, params: Optional[List] = None) -> 'Circuit':
         """添加 SWAP 门"""
@@ -302,6 +312,14 @@ class Circuit:
         if params:
             gate.params = params
         return self._add_gate(gate, [qubit1, qubit2])
+
+    def cswap(self, control: int, qubit1: int, qubit2: int, params: Optional[List] = None) -> 'Circuit':
+        """添加受控 SWAP（Fredkin）门：control, qubit1, qubit2"""
+        from .library.standard_gates import CSWAPGate
+        gate = CSWAPGate()
+        if params:
+            gate.params = params
+        return self._add_gate(gate, [control, qubit1, qubit2])
     
     def barrier(self, qubits: Optional[List[int]] = None) -> 'Circuit':
         """添加 barrier（用于分隔电路层）"""
@@ -536,26 +554,194 @@ class Circuit:
             raise NotImplementedError(f"Output format '{output}' not implemented")
     
     def _draw_text(self) -> str:
-        """简单的文本绘制"""
-        lines = []
-        for i in range(self._n_qubits):
-            line = f"q{i}: "
-            for layer in self.layers:
-                gate_str = "─"
-                for inst in layer:
-                    if i in inst.qubits:
-                        if len(inst.qubits) == 1:
-                            gate_str = f"[{inst.name}]"
-                        else:
-                            idx = inst.qubits.index(i)
-                            if idx == 0:
-                                gate_str = f"●" if inst.name in ('cx', 'cz', 'crz') else f"[{inst.name}]"
-                            else:
-                                gate_str = f"X" if inst.name == 'cx' else f"Z" if inst.name == 'cz' else f"[{inst.name}]"
-                        break
-                line += f"─{gate_str}─"
-            lines.append(line)
-        return "\n".join(lines)
+        """绘制文本电路图（更接近“标准量子电路图”）
+        
+        - 每个量子比特使用 3 行（盒子上边/内容/下边），从而支持“竖线连到目标门顶部中心”
+        - 支持多控制门：mcry（控制点 C/● + 竖线 + 目标 [ry] 盒子）
+        - 支持 cswap：控制点 + 竖线 + 两个 swap 端点 x/×
+        """
+        import sys
+
+        enc = (getattr(sys.stdout, "encoding", None) or "").lower()
+        ascii_fallback = any(k in enc for k in ("gbk", "cp936"))
+
+        # 字符集（在 gbk 下强制 ASCII，避免乱码）
+        ch_wire = "-" if ascii_fallback else "─"
+        ch_v = "|" if ascii_fallback else "│"
+        ch_ctrl = "C" if ascii_fallback else "●"
+        ch_swap = "x" if ascii_fallback else "×"
+
+        # 盒子字符
+        if ascii_fallback:
+            bx_tl, bx_tr, bx_bl, bx_br = "+", "+", "+", "+"
+            bx_h, bx_v = "-", "|"
+            bx_mid_l, bx_mid_r = "|", "|"
+            bx_top_conn = "+"  # 顶部中心连接点
+        else:
+            bx_tl, bx_tr, bx_bl, bx_br = "┌", "┐", "└", "┘"
+            bx_h, bx_v = "─", "│"
+            bx_mid_l, bx_mid_r = "┤", "├"
+            bx_top_conn = "┬"
+
+        cell_w =  nine = 9
+        cell_w = 9  # 必须为奇数，方便定义“中心列”
+        center = cell_w // 2
+        box_w = 5  # 盒子宽度（必须为奇数）
+        box_center = box_w // 2
+        box_start = center - box_center
+        box_end = box_start + box_w - 1
+
+        def _blank_seg() -> list[str]:
+            return [" "] * cell_w
+
+        def _seg_wire_mid() -> list[str]:
+            seg = [ch_wire] * cell_w
+            return seg
+
+        def _put(seg: list[str], col: int, s: str):
+            for k, ch in enumerate(s):
+                j = col + k
+                if 0 <= j < len(seg):
+                    seg[j] = ch
+
+        def _draw_box(seg_top: list[str], seg_mid: list[str], seg_bot: list[str], label: str, controlled: bool):
+            # 上边：┌──┬──┐（controlled）或 ┌─────┐
+            seg_top[box_start] = bx_tl
+            seg_top[box_end] = bx_tr
+            for j in range(box_start + 1, box_end):
+                seg_top[j] = bx_h
+            if controlled:
+                seg_top[center] = bx_top_conn
+
+            # 中间：┤ ry ├
+            seg_mid[box_start] = bx_mid_l
+            seg_mid[box_end] = bx_mid_r
+            for j in range(box_start + 1, box_end):
+                seg_mid[j] = " "
+            lbl = label[: (box_w - 2)]
+            lbl_col = center - (len(lbl) // 2)
+            _put(seg_mid, lbl_col, lbl)
+
+            # 下边：└─────┘
+            seg_bot[box_start] = bx_bl
+            seg_bot[box_end] = bx_br
+            for j in range(box_start + 1, box_end):
+                seg_bot[j] = bx_h
+
+        # 行数：每个 qubit 3 行
+        nrows = self._n_qubits * 3
+        # 前缀对齐
+        label_mid = [f"q{i}: " for i in range(self._n_qubits)]
+        prefix_w = max(len(s) for s in label_mid) if label_mid else 0
+        rows = []
+        for q in range(self._n_qubits):
+            pad = " " * (prefix_w - len(label_mid[q]))
+            rows.append(" " * prefix_w)               # top
+            rows.append(label_mid[q] + pad)          # mid
+            rows.append(" " * prefix_w)               # bot
+
+        def r_top(q: int) -> int:
+            return 3 * q
+
+        def r_mid(q: int) -> int:
+            return 3 * q + 1
+
+        def r_bot(q: int) -> int:
+            return 3 * q + 2
+
+        for layer in self.layers:
+            # 每个 qubit 三段：top 空白，mid 画 wire，bot 空白
+            segs_top = [_blank_seg() for _ in range(self._n_qubits)]
+            segs_mid = [_seg_wire_mid() for _ in range(self._n_qubits)]
+            segs_bot = [_blank_seg() for _ in range(self._n_qubits)]
+
+            def _draw_vertical_span(lo_q: int, hi_q: int):
+                for q in range(lo_q, hi_q + 1):
+                    # 允许在 wire 上画竖线（让连接“穿过”中间线）
+                    segs_top[q][center] = ch_v if segs_top[q][center] == " " else segs_top[q][center]
+                    segs_mid[q][center] = ch_v
+                    segs_bot[q][center] = ch_v if segs_bot[q][center] == " " else segs_bot[q][center]
+
+            for inst in layer:
+                qs = list(inst.qubits)
+                if not qs:
+                    continue
+                name = inst.name
+
+                if name == "mcry":
+                    # qubits = [controls..., target]
+                    controls = qs[:-1]
+                    target = qs[-1]
+                    if controls:
+                        lo, hi = min(controls + [target]), max(controls + [target])
+                        _draw_vertical_span(lo, hi)
+                        for c in controls:
+                            segs_mid[c][center] = ch_ctrl
+                        # 目标：画成受控 [ry] 盒子，并在顶部中心留连接点
+                        _draw_box(segs_top[target], segs_mid[target], segs_bot[target], "ry", controlled=True)
+                    else:
+                        _draw_box(segs_top[target], segs_mid[target], segs_bot[target], "ry", controlled=False)
+
+                elif name == "cswap":
+                    # qubits = [control, q1, q2]
+                    if len(qs) == 3:
+                        c, a, b = qs
+                        lo, hi = min(qs), max(qs)
+                        _draw_vertical_span(lo, hi)
+                        segs_mid[c][center] = ch_ctrl
+                        segs_mid[a][center] = ch_swap
+                        segs_mid[b][center] = ch_swap
+                    else:
+                        lo, hi = min(qs), max(qs)
+                        _draw_vertical_span(lo, hi)
+                        for q in qs:
+                            _draw_box(segs_top[q], segs_mid[q], segs_bot[q], name[:2], controlled=False)
+
+                elif name in ("cx", "cz", "crz"):
+                    if len(qs) == 2:
+                        c, t = qs
+                        lo, hi = min(qs), max(qs)
+                        _draw_vertical_span(lo, hi)
+                        segs_mid[c][center] = ch_ctrl
+                        _draw_box(segs_top[t], segs_mid[t], segs_bot[t], "x" if name == "cx" else "z" if name == "cz" else "rz", controlled=False)
+                    else:
+                        lo, hi = min(qs), max(qs)
+                        _draw_vertical_span(lo, hi)
+                        for q in qs:
+                            _draw_box(segs_top[q], segs_mid[q], segs_bot[q], name[:2], controlled=False)
+
+                elif name == "swap":
+                    if len(qs) == 2:
+                        a, b = qs
+                        lo, hi = min(qs), max(qs)
+                        _draw_vertical_span(lo, hi)
+                        segs_mid[a][center] = ch_swap
+                        segs_mid[b][center] = ch_swap
+                    else:
+                        lo, hi = min(qs), max(qs)
+                        _draw_vertical_span(lo, hi)
+                        for q in qs:
+                            segs_mid[q][center] = ch_swap
+
+                else:
+                    # 单比特门：画盒子
+                    if len(qs) == 1:
+                        q = qs[0]
+                        _draw_box(segs_top[q], segs_mid[q], segs_bot[q], name[:2], controlled=False)
+                    else:
+                        # 多比特未知门：先画竖线，再在参与 qubit 上画小盒子
+                        lo, hi = min(qs), max(qs)
+                        _draw_vertical_span(lo, hi)
+                        for q in qs:
+                            _draw_box(segs_top[q], segs_mid[q], segs_bot[q], name[:2], controlled=False)
+
+            # 拼接这一层
+            for q in range(self._n_qubits):
+                rows[r_top(q)] += "".join(segs_top[q]) + " "
+                rows[r_mid(q)] += "".join(segs_mid[q]) + " "
+                rows[r_bot(q)] += "".join(segs_bot[q]) + " "
+
+        return "\n".join(rows)
     
     def __len__(self) -> int:
         """返回层数"""

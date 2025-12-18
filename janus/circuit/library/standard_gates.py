@@ -397,6 +397,87 @@ class SwapGate(Gate):
         return gate
 
 
+class MCRYGate(Gate):
+    """多控 RY 门（controls... -> target）
+    
+    约定：gate 的 qubits 顺序为 [control_0, control_1, ..., control_{k-1}, target]。
+    仅当所有 control 都为 |1⟩ 时，在 target 上施加 RY(theta)。
+    """
+
+    def __init__(self, theta: float, num_controls: int, label: Optional[str] = None):
+        if num_controls < 1:
+            raise ValueError("MCRYGate 需要至少 1 个控制比特")
+        self._num_controls = num_controls
+        super().__init__('mcry', num_controls + 1, [theta], label)
+
+    @property
+    def theta(self) -> float:
+        return self._params[0]
+
+    @property
+    def num_controls(self) -> int:
+        return self._num_controls
+
+    def to_matrix(self) -> np.ndarray:
+        # 维度：2^(k+1)，基矢顺序按 [control_0 ... control_{k-1} target] 的二进制排列
+        k = self._num_controls
+        dim = 2 ** (k + 1)
+        mat = np.eye(dim, dtype=complex)
+
+        theta = self.theta
+        c = np.cos(theta / 2)
+        s = np.sin(theta / 2)
+
+        # 当 controls 全为 1 时，对 target 的 |0>,|1> 子空间作用 RY
+        i0 = dim - 2  # |11..10>
+        i1 = dim - 1  # |11..11>
+        mat[i0, i0] = c
+        mat[i0, i1] = -s
+        mat[i1, i0] = s
+        mat[i1, i1] = c
+        return mat
+
+    def inverse(self) -> 'MCRYGate':
+        return MCRYGate(-self.theta, self._num_controls, self._label)
+
+    def copy(self) -> 'MCRYGate':
+        gate = MCRYGate(self.theta, self._num_controls, self._label)
+        gate._qubits = self._qubits.copy()
+        return gate
+
+
+class CSWAPGate(Gate):
+    """受控 SWAP（Fredkin）门：control, q1, q2
+    
+    约定：gate 的 qubits 顺序为 [control, q1, q2]。
+    当 control 为 |1⟩ 时交换 q1 与 q2。
+    """
+
+    def __init__(self, params: Optional[List] = None, label: Optional[str] = None):
+        super().__init__('cswap', 3, params or [], label)
+
+    def to_matrix(self) -> np.ndarray:
+        # 基矢顺序按 |c q1 q2> 的二进制排列：000,001,...,111
+        mat = np.eye(8, dtype=complex)
+        # 仅当 c=1 时交换 |101> <-> |110|
+        # index: |c q1 q2> = (c<<2) + (q1<<1) + q2
+        i_a = (1 << 2) + (0 << 1) + 1  # 101 = 5
+        i_b = (1 << 2) + (1 << 1) + 0  # 110 = 6
+        mat[i_a, i_a] = 0
+        mat[i_b, i_b] = 0
+        mat[i_a, i_b] = 1
+        mat[i_b, i_a] = 1
+        return mat
+
+    def inverse(self) -> 'CSWAPGate':
+        return CSWAPGate(self._params.copy(), self._label)
+
+    def copy(self) -> 'CSWAPGate':
+        gate = CSWAPGate(self._params.copy(), self._label)
+        gate._qubits = self._qubits.copy()
+        return gate
+
+
 # ==================== 特殊操作 ====================
 
 class Barrier(Gate):
