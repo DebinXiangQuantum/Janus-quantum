@@ -8,12 +8,82 @@ import uuid
 import copy
 import numpy as np
 
-from .gate import Gate
+from .gate import Gate, ControlledGate
 from .instruction import Instruction
 from .layer import Layer
 from .qubit import Qubit, QuantumRegister
 from .clbit import Clbit, ClassicalRegister
 from .parameter import Parameter, ParameterExpression, is_parameterized
+
+
+class GateBuilder:
+    """
+    门构建器，支持链式调用添加受控门
+    
+    Example:
+        qc = Circuit(4)
+        # 链式调用创建受控门
+        qc.gate(U3Gate(np.pi/4, np.pi/4, np.pi/4), 3).control([0, 1, 2])
+    """
+    
+    def __init__(self, circuit: 'Circuit', gate: Gate, target_qubits: List[int]):
+        """
+        初始化门构建器
+        
+        Args:
+            circuit: 所属电路
+            gate: 基础门
+            target_qubits: 目标量子比特列表
+        """
+        self._circuit = circuit
+        self._gate = gate
+        self._target_qubits = target_qubits
+        self._added = False
+    
+    def control(self, control_qubits: Union[int, List[int]]) -> 'Circuit':
+        """
+        添加控制比特，创建受控门
+        
+        Args:
+            control_qubits: 控制比特索引或索引列表
+        
+        Returns:
+            Circuit: 返回电路以支持继续链式调用
+        
+        Example:
+            qc.gate(RXGate(np.pi/4), 2).control(0)        # 单控制 RX
+            qc.gate(U3Gate(np.pi/4, 0, 0), 3).control([0, 1, 2])  # 三控制 U3
+        """
+        if isinstance(control_qubits, int):
+            control_qubits = [control_qubits]
+        
+        num_ctrl = len(control_qubits)
+        controlled_gate = self._gate.control(num_ctrl)
+        
+        # 量子比特顺序：控制比特 + 目标比特
+        qubits = list(control_qubits) + self._target_qubits
+        
+        self._circuit.append(controlled_gate, qubits)
+        self._added = True
+        return self._circuit
+    
+    def add(self) -> 'Circuit':
+        """
+        直接添加门（不添加控制）
+        
+        Returns:
+            Circuit: 返回电路以支持继续链式调用
+        """
+        self._circuit.append(self._gate, self._target_qubits)
+        self._added = True
+        return self._circuit
+    
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, *args):
+        if not self._added:
+            self._circuit.append(self._gate, self._target_qubits)
 
 
 class Circuit:
@@ -445,6 +515,165 @@ class Circuit:
         """添加 C4X 门"""
         from .library.standard_gates import C4XGate
         return self._add_gate(C4XGate(), [ctrl1, ctrl2, ctrl3, ctrl4, target])
+
+    def rccx(self, ctrl1: int, ctrl2: int, target: int) -> 'Circuit':
+        """添加 RCCX (简化 Toffoli) 门"""
+        from .library.standard_gates import RCCXGate
+        return self._add_gate(RCCXGate(), [ctrl1, ctrl2, target])
+
+    def rc3x(self, ctrl1: int, ctrl2: int, ctrl3: int, target: int) -> 'Circuit':
+        """添加 RC3X (简化三控制 X) 门"""
+        from .library.standard_gates import RC3XGate
+        return self._add_gate(RC3XGate(), [ctrl1, ctrl2, ctrl3, target])
+
+    def c3sx(self, ctrl1: int, ctrl2: int, ctrl3: int, target: int) -> 'Circuit':
+        """添加 C3SX (三控制 √X) 门"""
+        from .library.standard_gates import C3SXGate
+        return self._add_gate(C3SXGate(), [ctrl1, ctrl2, ctrl3, target])
+
+    # ==================== 特殊两比特门 ====================
+
+    def xx_minus_yy(self, theta: float, beta: float, qubit1: int, qubit2: int) -> 'Circuit':
+        """添加 XX-YY 相互作用门
+        
+        Args:
+            theta: 旋转角度
+            beta: 相位角度
+            qubit1: 第一个量子比特
+            qubit2: 第二个量子比特
+        """
+        from .library.standard_gates import XXMinusYYGate
+        return self._add_gate(XXMinusYYGate(theta, beta), [qubit1, qubit2])
+
+    def xx_plus_yy(self, theta: float, beta: float, qubit1: int, qubit2: int) -> 'Circuit':
+        """添加 XX+YY 相互作用门
+        
+        Args:
+            theta: 旋转角度
+            beta: 相位角度
+            qubit1: 第一个量子比特
+            qubit2: 第二个量子比特
+        """
+        from .library.standard_gates import XXPlusYYGate
+        return self._add_gate(XXPlusYYGate(theta, beta), [qubit1, qubit2])
+
+    # ==================== 全局相位 ====================
+
+    def global_phase(self, phase: float) -> 'Circuit':
+        """添加全局相位门
+        
+        Args:
+            phase: 相位角度
+        """
+        from .library.standard_gates import GlobalPhaseGate
+        # 全局相位门不作用于任何量子比特
+        return self.append(GlobalPhaseGate(phase), [])
+
+    # ==================== 多控制门 ====================
+    
+    def mcx(self, controls: list, target: int) -> 'Circuit':
+        """添加 MCX (多控制 X) 门
+        
+        Args:
+            controls: 控制比特列表
+            target: 目标比特
+        """
+        from .library.standard_gates import MCXGate
+        qubits = list(controls) + [target]
+        return self._add_gate(MCXGate(len(controls)), qubits)
+
+    def mcx_gray(self, controls: list, target: int) -> 'Circuit':
+        """添加 MCX (Gray code 实现) 门
+        
+        Args:
+            controls: 控制比特列表
+            target: 目标比特
+        """
+        from .library.standard_gates import MCXGrayCode
+        qubits = list(controls) + [target]
+        return self._add_gate(MCXGrayCode(len(controls)), qubits)
+
+    def mcx_recursive(self, controls: list, target: int) -> 'Circuit':
+        """添加 MCX (递归实现) 门
+        
+        Args:
+            controls: 控制比特列表
+            target: 目标比特
+        """
+        from .library.standard_gates import MCXRecursive
+        qubits = list(controls) + [target]
+        return self._add_gate(MCXRecursive(len(controls)), qubits)
+
+    def mcx_vchain(self, controls: list, target: int) -> 'Circuit':
+        """添加 MCX (V-chain 实现) 门
+        
+        Args:
+            controls: 控制比特列表
+            target: 目标比特
+        """
+        from .library.standard_gates import MCXVChain
+        qubits = list(controls) + [target]
+        return self._add_gate(MCXVChain(len(controls)), qubits)
+    
+    def mcp(self, theta: float, controls: list, target: int) -> 'Circuit':
+        """添加 MCPhase (多控制 Phase) 门
+        
+        Args:
+            theta: 相位角度
+            controls: 控制比特列表
+            target: 目标比特
+        """
+        from .library.standard_gates import MCPhaseGate
+        qubits = list(controls) + [target]
+        return self._add_gate(MCPhaseGate(theta, len(controls)), qubits)
+    
+    def mcu1(self, lam: float, controls: list, target: int) -> 'Circuit':
+        """添加 MCU1 (多控制 U1) 门
+        
+        Args:
+            lam: 相位角度
+            controls: 控制比特列表
+            target: 目标比特
+        """
+        from .library.standard_gates import MCU1Gate
+        qubits = list(controls) + [target]
+        return self._add_gate(MCU1Gate(lam, len(controls)), qubits)
+    
+    def mcrx(self, theta: float, controls: list, target: int) -> 'Circuit':
+        """添加 MCRX (多控制 RX) 门
+        
+        Args:
+            theta: 旋转角度
+            controls: 控制比特列表
+            target: 目标比特
+        """
+        from .library.standard_gates import MCRXGate
+        qubits = list(controls) + [target]
+        return self._add_gate(MCRXGate(theta, len(controls)), qubits)
+    
+    def mcry(self, theta: float, controls: list, target: int) -> 'Circuit':
+        """添加 MCRY (多控制 RY) 门
+        
+        Args:
+            theta: 旋转角度
+            controls: 控制比特列表
+            target: 目标比特
+        """
+        from .library.standard_gates import MCRYGate
+        qubits = list(controls) + [target]
+        return self._add_gate(MCRYGate(theta, len(controls)), qubits)
+    
+    def mcrz(self, theta: float, controls: list, target: int) -> 'Circuit':
+        """添加 MCRZ (多控制 RZ) 门
+        
+        Args:
+            theta: 旋转角度
+            controls: 控制比特列表
+            target: 目标比特
+        """
+        from .library.standard_gates import MCRZGate
+        qubits = list(controls) + [target]
+        return self._add_gate(MCRZGate(theta, len(controls)), qubits)
     
     def reset(self, qubit: int) -> 'Circuit':
         """添加 Reset 操作"""
@@ -481,7 +710,39 @@ class Circuit:
         for i in range(self._n_qubits):
             self.measure(i, i)
         return self
-    
+
+    # ==================== 链式调用支持 ====================
+
+    def gate(self, gate: Gate, target_qubits: Union[int, List[int]]) -> 'GateBuilder':
+        """
+        添加门并返回 GateBuilder 以支持链式调用
+        
+        Args:
+            gate: 要添加的门
+            target_qubits: 目标量子比特（单个或列表）
+        
+        Returns:
+            GateBuilder: 门构建器，可以调用 .control() 添加控制
+        
+        Example:
+            from janus.circuit.library import U3Gate, RXGate
+            
+            qc = Circuit(4)
+            
+            # 创建受控 U3 门
+            qc.gate(U3Gate(np.pi/4, np.pi/4, np.pi/4), 3).control([0, 1, 2])
+            
+            # 创建受控 RX 门
+            qc.gate(RXGate(np.pi/2), 2).control(0)
+            
+            # 不调用 control 则作为普通门添加
+            qc.gate(U3Gate(np.pi/4, 0, 0), 0)  # 普通 U3 门
+        """
+        if isinstance(target_qubits, int):
+            target_qubits = [target_qubits]
+        
+        return GateBuilder(self, gate, target_qubits)
+
     # ==================== 分层计算 ====================
     
     def _compute_layers(self):
@@ -702,7 +963,8 @@ class Circuit:
             lines.append(f"  {i}: {inst.operation} on {inst.qubits}")
         return "\n".join(lines)
     
-    def draw(self, output: str = 'text', filename: str = None, figsize: tuple = None, dpi: int = 150):
+    def draw(self, output: str = 'text', filename: str = None, figsize: tuple = None, 
+             dpi: int = 150, fold: int = None, line_length: int = None):
         """
         绘制电路
         
@@ -711,12 +973,14 @@ class Circuit:
             filename: 保存文件名（仅 'png' 模式）
             figsize: 图像大小 (width, height)，默认自动计算
             dpi: 图像分辨率，默认 150
+            fold: 每行显示的最大层数（仅 'text' 模式），设为 -1 禁用折叠
+            line_length: 每行最大字符数（仅 'text' 模式），默认自动检测终端宽度
         
         Returns:
             'text' 模式返回字符串，'mpl' 模式返回 Figure 对象
         """
         if output == 'text':
-            return self._draw_text()
+            return self._draw_text(fold=fold, line_length=line_length)
         elif output in ('mpl', 'png'):
             fig = self._draw_mpl(figsize=figsize)
             if output == 'png' and filename:
@@ -726,7 +990,7 @@ class Circuit:
         else:
             raise NotImplementedError(f"Output format '{output}' not implemented")
     
-    def _draw_text(self) -> str:
+    def _draw_text(self, fold: int = None, line_length: int = None) -> str:
         """绘制文本电路图（更接近“标准量子电路图”）
         
         - 每个量子比特使用 3 行（盒子上边/内容/下边），从而支持“竖线连到目标门顶部中心”
@@ -734,6 +998,7 @@ class Circuit:
         - 支持 cswap：控制点 + 竖线 + 两个 swap 端点 x/×
         """
         import sys
+        from shutil import get_terminal_size
 
         enc = (getattr(sys.stdout, "encoding", None) or "").lower()
         ascii_fallback = any(k in enc for k in ("gbk", "cp936"))
@@ -833,13 +1098,31 @@ class Circuit:
                 if 0 <= j < len(seg):
                     seg[j] = ch
 
-        def _draw_box(seg_top: list[str], seg_mid: list[str], seg_bot: list[str], label: str, controlled: bool):
-            # 上边：┌──┬──┐（controlled）或 ┌─────┐
+        # 底部连接点字符
+        bx_bot_conn = "+" if ascii_fallback else "┴"
+        
+        def _draw_box(seg_top: list[str], seg_mid: list[str], seg_bot: list[str], label: str, 
+                      ctrl_above: bool = False, ctrl_below: bool = False):
+            """绘制门的盒子
+            
+            Args:
+                seg_top: 顶部行
+                seg_mid: 中间行
+                seg_bot: 底部行
+                label: 门标签
+                ctrl_above: 是否有控制点在上方（需要顶部连接点）
+                ctrl_below: 是否有控制点在下方（需要底部连接点）
+            """
+            # 检查是否有竖线穿过（由其他门画的）
+            has_line_above = seg_top[center] == ch_v
+            has_line_below = seg_bot[center] == ch_v
+            
+            # 上边：┌──┬──┐（ctrl_above 或有竖线穿过）或 ┌─────┐
             seg_top[box_start] = bx_tl
             seg_top[box_end] = bx_tr
             for j in range(box_start + 1, box_end):
                 seg_top[j] = bx_h
-            if controlled:
+            if ctrl_above or has_line_above:
                 seg_top[center] = bx_top_conn
 
             # 中间：┤ ry ├
@@ -851,11 +1134,13 @@ class Circuit:
             lbl_col = center - (len(lbl) // 2)
             _put(seg_mid, lbl_col, lbl)
 
-            # 下边：└─────┘
+            # 下边：└──┴──┘（ctrl_below 或有竖线穿过）或 └─────┘
             seg_bot[box_start] = bx_bl
             seg_bot[box_end] = bx_br
             for j in range(box_start + 1, box_end):
                 seg_bot[j] = bx_h
+            if ctrl_below or has_line_below:
+                seg_bot[center] = bx_bot_conn
 
         # 行数：每个 qubit 3 行
         nrows = self._n_qubits * 3
@@ -883,20 +1168,84 @@ class Circuit:
             segs_top = [_blank_seg() for _ in range(self._n_qubits)]
             segs_mid = [_seg_wire_mid() for _ in range(self._n_qubits)]
             segs_bot = [_blank_seg() for _ in range(self._n_qubits)]
+            
+            # 预先收集这一层中所有需要画盒子的量子比特位置
+            box_qubits = set()
+            for inst in layer:
+                qs = list(inst.qubits)
+                name = inst.name
+                op = inst.operation
+                
+                # 确定哪些量子比特需要画盒子
+                if isinstance(op, ControlledGate):
+                    num_ctrl = op.ctrl_qubits
+                    targets = qs[num_ctrl:]
+                    box_qubits.update(targets)
+                elif name in ("mcx", "mcx_gray", "mcx_recursive", "mcx_vchain", 
+                            "mcp", "mcphase", "mcu1", "mcrx", "mcry", "mcrz"):
+                    box_qubits.add(qs[-1])  # 目标
+                elif name in ("cx", "cz", "crz", "crx", "cry", "cp", "cu", "cu1", "cu3", "ch", "cy"):
+                    if len(qs) == 2:
+                        box_qubits.add(qs[1])  # 目标
+                elif name in ("ccx", "ccz", "c3x", "c4x", "rccx", "rc3x", "c3sx"):
+                    box_qubits.add(qs[-1])  # 目标
+                elif name not in ("swap", "cswap"):
+                    # 其他门（单比特门等）
+                    box_qubits.update(qs)
 
-            def _draw_vertical_span(lo_q: int, hi_q: int):
-                """在 lo_q 和 hi_q 之间画竖线连接"""
+            def _draw_vertical_span(lo_q: int, hi_q: int, participating_qubits: set = None):
+                """在 lo_q 和 hi_q 之间画竖线连接
+                
+                Args:
+                    lo_q: 最上面的量子比特
+                    hi_q: 最下面的量子比特
+                    participating_qubits: 参与门操作的量子比特集合
+                """
+                if participating_qubits is None:
+                    participating_qubits = set(range(lo_q, hi_q + 1))
+                
                 for q in range(lo_q, hi_q + 1):
-                    if q == lo_q:
+                    is_participating = q in participating_qubits
+                    is_top = q == lo_q
+                    is_bottom = q == hi_q
+                    
+                    # 检查该位置是否有其他门的盒子（不是当前门的）
+                    has_other_box = q in box_qubits and q not in participating_qubits
+                    
+                    if is_top and is_bottom:
+                        # 只有一个量子比特，不需要画竖线
+                        pass
+                    elif is_top:
                         # 最上面的比特：只在下方画竖线
                         segs_bot[q][center] = ch_v
-                    elif q == hi_q:
+                    elif is_bottom:
                         # 最下面的比特：只在上方画竖线
                         segs_top[q][center] = ch_v
-                    else:
-                        # 中间的比特：上下都画竖线，穿过 wire
+                    elif is_participating:
+                        # 参与的中间比特：上下都画竖线，穿过 wire
                         segs_top[q][center] = ch_v
                         segs_mid[q][center] = ch_v
+                        segs_bot[q][center] = ch_v
+                    elif has_other_box:
+                        # 有其他门的盒子：在盒子的顶部和底部画连接点
+                        # 检查盒子是否已经画好（通过检查边框字符）
+                        if segs_top[q][center] == bx_h:
+                            segs_top[q][center] = bx_top_conn
+                        elif segs_top[q][center] not in (bx_top_conn, ch_v):
+                            # 如果不是连接点或竖线，画竖线
+                            segs_top[q][center] = ch_v
+                        # 否则保持原样（已经是连接点或竖线）
+                        
+                        if segs_bot[q][center] == bx_h:
+                            segs_bot[q][center] = bx_bot_conn
+                        elif segs_bot[q][center] not in (bx_bot_conn, ch_v):
+                            # 如果不是连接点或竖线，画竖线
+                            segs_bot[q][center] = ch_v
+                        # 否则保持原样（已经是连接点或竖线）
+                    else:
+                        # 不参与的中间比特：竖线穿过，用交叉符号
+                        segs_top[q][center] = ch_v
+                        segs_mid[q][center] = "┼" if not ascii_fallback else "+"
                         segs_bot[q][center] = ch_v
 
             for inst in layer:
@@ -904,42 +1253,91 @@ class Circuit:
                 if not qs:
                     continue
                 name = inst.name
+                op = inst.operation
 
-                if name == "mcry":
-                    # qubits = [controls..., target]
-                    controls = qs[:-1]
-                    target = qs[-1]
-                    if controls:
-                        lo, hi = min(controls + [target]), max(controls + [target])
-                        _draw_vertical_span(lo, hi)
+                # 检查是否是 ControlledGate（通过 .control() 创建的）
+                if isinstance(op, ControlledGate):
+                    num_ctrl = op.ctrl_qubits
+                    controls = qs[:num_ctrl]
+                    targets = qs[num_ctrl:]
+                    params = inst.params if hasattr(inst, 'params') else []
+                    
+                    # 获取基础门名称作为目标标签
+                    base_name = op.base_gate.name
+                    target_label = _format_gate_label(base_name, params)
+                    
+                    if controls and targets:
+                        lo, hi = min(qs), max(qs)
+                        _draw_vertical_span(lo, hi, set(qs))
                         for c in controls:
                             segs_mid[c][center] = ch_ctrl
-                        # 目标：画成受控 [ry] 盒子，并在顶部中心留连接点
-                        _draw_box(segs_top[target], segs_mid[target], segs_bot[target], "ry", controlled=True)
+                        # 目标门：根据控制点位置决定连接点
+                        for t in targets:
+                            has_ctrl_above = any(c < t for c in controls)
+                            has_ctrl_below = any(c > t for c in controls)
+                            _draw_box(segs_top[t], segs_mid[t], segs_bot[t], target_label, 
+                                      ctrl_above=has_ctrl_above, ctrl_below=has_ctrl_below)
                     else:
-                        _draw_box(segs_top[target], segs_mid[target], segs_bot[target], "ry", controlled=False)
+                        for q in qs:
+                            _draw_box(segs_top[q], segs_mid[q], segs_bot[q], target_label)
+
+                elif name in ("mcx", "mcx_gray", "mcx_recursive", "mcx_vchain", 
+                            "mcp", "mcphase", "mcu1", "mcrx", "mcry", "mcrz"):
+                    # 多控制门: qubits = [controls..., target]
+                    controls = qs[:-1]
+                    target = qs[-1]
+                    params = inst.params if hasattr(inst, 'params') else []
+                    
+                    # 确定目标门的标签
+                    if name in ("mcx", "mcx_gray", "mcx_recursive", "mcx_vchain"):
+                        target_label = "X"
+                    elif name in ("mcp", "mcphase"):
+                        target_label = _format_gate_label("p", params[:1] if params else [])
+                    elif name == "mcu1":
+                        target_label = _format_gate_label("u1", params[:1] if params else [])
+                    elif name == "mcrx":
+                        target_label = _format_gate_label("rx", params[:1] if params else [])
+                    elif name == "mcry":
+                        target_label = _format_gate_label("ry", params[:1] if params else [])
+                    elif name == "mcrz":
+                        target_label = _format_gate_label("rz", params[:1] if params else [])
+                    else:
+                        target_label = name
+                    
+                    if controls:
+                        lo, hi = min(controls + [target]), max(controls + [target])
+                        _draw_vertical_span(lo, hi, set(qs))
+                        for c in controls:
+                            segs_mid[c][center] = ch_ctrl
+                        # 目标：根据控制点位置决定连接点
+                        has_ctrl_above = any(c < target for c in controls)
+                        has_ctrl_below = any(c > target for c in controls)
+                        _draw_box(segs_top[target], segs_mid[target], segs_bot[target], target_label, 
+                                  ctrl_above=has_ctrl_above, ctrl_below=has_ctrl_below)
+                    else:
+                        _draw_box(segs_top[target], segs_mid[target], segs_bot[target], target_label)
 
                 elif name == "cswap":
                     # qubits = [control, q1, q2]
                     if len(qs) == 3:
                         c, a, b = qs
                         lo, hi = min(qs), max(qs)
-                        _draw_vertical_span(lo, hi)
+                        _draw_vertical_span(lo, hi, set(qs))
                         segs_mid[c][center] = ch_ctrl
                         segs_mid[a][center] = ch_swap
                         segs_mid[b][center] = ch_swap
                     else:
                         lo, hi = min(qs), max(qs)
-                        _draw_vertical_span(lo, hi)
+                        _draw_vertical_span(lo, hi, set(qs))
                         for q in qs:
-                            _draw_box(segs_top[q], segs_mid[q], segs_bot[q], name[:2], controlled=False)
+                            _draw_box(segs_top[q], segs_mid[q], segs_bot[q], name[:2])
 
                 elif name in ("cx", "cz", "crz", "crx", "cry", "cp", "cu", "cu1", "cu3", "ch", "cy"):
                     # 单控制门
                     if len(qs) == 2:
                         c, t = qs
                         lo, hi = min(qs), max(qs)
-                        _draw_vertical_span(lo, hi)
+                        _draw_vertical_span(lo, hi, set(qs))
                         segs_mid[c][center] = ch_ctrl
                         # 目标门标签
                         params = inst.params if hasattr(inst, 'params') else []
@@ -955,40 +1353,50 @@ class Circuit:
                             # 受控旋转门，显示参数
                             base_name = name[1:] if name.startswith('c') else name
                             target_label = _format_gate_label(base_name, params)
-                        _draw_box(segs_top[t], segs_mid[t], segs_bot[t], target_label, controlled=False)
+                        # 根据控制点位置决定连接点
+                        ctrl_above = c < t
+                        ctrl_below = c > t
+                        _draw_box(segs_top[t], segs_mid[t], segs_bot[t], target_label, 
+                                  ctrl_above=ctrl_above, ctrl_below=ctrl_below)
                     else:
                         lo, hi = min(qs), max(qs)
-                        _draw_vertical_span(lo, hi)
+                        _draw_vertical_span(lo, hi, set(qs))
                         for q in qs:
-                            _draw_box(segs_top[q], segs_mid[q], segs_bot[q], name[:2], controlled=False)
+                            _draw_box(segs_top[q], segs_mid[q], segs_bot[q], name[:2])
                 
-                elif name in ("ccx", "ccz", "c3x", "c4x"):
+                elif name in ("ccx", "ccz", "c3x", "c4x", "rccx", "rc3x", "c3sx"):
                     # 多控制门：前面都是控制，最后一个是目标
                     controls = qs[:-1]
                     target = qs[-1]
                     lo, hi = min(qs), max(qs)
-                    _draw_vertical_span(lo, hi)
+                    _draw_vertical_span(lo, hi, set(qs))
                     for c in controls:
                         segs_mid[c][center] = ch_ctrl
                     # 目标门
-                    if name == "ccx" or name == "c3x" or name == "c4x":
+                    if name in ("ccx", "c3x", "c4x", "rccx", "rc3x"):
                         target_label = "X"
                     elif name == "ccz":
                         target_label = "Z"
+                    elif name == "c3sx":
+                        target_label = "√X"
                     else:
                         target_label = name[-1].upper()
-                    _draw_box(segs_top[target], segs_mid[target], segs_bot[target], target_label, controlled=False)
+                    # 根据控制点位置决定连接点
+                    has_ctrl_above = any(c < target for c in controls)
+                    has_ctrl_below = any(c > target for c in controls)
+                    _draw_box(segs_top[target], segs_mid[target], segs_bot[target], target_label, 
+                              ctrl_above=has_ctrl_above, ctrl_below=has_ctrl_below)
 
                 elif name == "swap":
                     if len(qs) == 2:
                         a, b = qs
                         lo, hi = min(qs), max(qs)
-                        _draw_vertical_span(lo, hi)
+                        _draw_vertical_span(lo, hi, set(qs))
                         segs_mid[a][center] = ch_swap
                         segs_mid[b][center] = ch_swap
                     else:
                         lo, hi = min(qs), max(qs)
-                        _draw_vertical_span(lo, hi)
+                        _draw_vertical_span(lo, hi, set(qs))
                         for q in qs:
                             segs_mid[q][center] = ch_swap
 
@@ -998,21 +1406,100 @@ class Circuit:
                     label = _format_gate_label(name, params)
                     if len(qs) == 1:
                         q = qs[0]
-                        _draw_box(segs_top[q], segs_mid[q], segs_bot[q], label, controlled=False)
+                        _draw_box(segs_top[q], segs_mid[q], segs_bot[q], label)
                     else:
                         # 多比特未知门：先画竖线，再在参与 qubit 上画小盒子
                         lo, hi = min(qs), max(qs)
-                        _draw_vertical_span(lo, hi)
+                        _draw_vertical_span(lo, hi, set(qs))
                         for q in qs:
-                            _draw_box(segs_top[q], segs_mid[q], segs_bot[q], label, controlled=False)
+                            _draw_box(segs_top[q], segs_mid[q], segs_bot[q], label)
 
             # 拼接这一层
             for q in range(self._n_qubits):
-                rows[r_top(q)] += "".join(segs_top[q]) + " "
-                rows[r_mid(q)] += "".join(segs_mid[q]) + " "
-                rows[r_bot(q)] += "".join(segs_bot[q]) + " "
+                rows[r_top(q)] += "".join(segs_top[q])
+                rows[r_mid(q)] += "".join(segs_mid[q])
+                rows[r_bot(q)] += "".join(segs_bot[q])
 
-        return "\n".join(rows)
+        # 处理折叠（参考 Qiskit 的分页方案）
+        n_layers = len(self.layers)
+        layer_width = cell_w  # 每层的字符宽度
+        
+        # 分页箭头字符
+        arrow_right = "»" if not ascii_fallback else ">>"
+        arrow_left = "«" if not ascii_fallback else "<<"
+        
+        # 确定每行最大字符数
+        if line_length is None:
+            # 自动检测终端宽度
+            try:
+                terminal_width, _ = get_terminal_size()
+                line_length = terminal_width
+            except Exception:
+                line_length = 80  # 默认值
+        
+        # 如果 fold 为 -1，禁用折叠
+        if fold == -1:
+            return "\n".join(rows)
+        
+        # 计算每行可以显示的层数
+        if fold is not None:
+            layers_per_line = fold
+        else:
+            # 根据 line_length 自动计算
+            available_width = line_length - prefix_w - 4  # 留出箭头空间
+            layers_per_line = max(1, available_width // layer_width)
+        
+        if n_layers <= layers_per_line:
+            # 不需要折叠
+            return "\n".join(rows)
+        
+        # 需要折叠：将电路分成多段
+        result_parts = []
+        
+        for segment_idx, segment_start in enumerate(range(0, n_layers, layers_per_line)):
+            segment_end = min(segment_start + layers_per_line, n_layers)
+            is_first_segment = segment_idx == 0
+            is_last_segment = segment_end >= n_layers
+            
+            # 计算这一段的字符范围
+            char_start = prefix_w + segment_start * layer_width
+            char_end = prefix_w + segment_end * layer_width
+            
+            segment_rows = []
+            for q in range(self._n_qubits):
+                # 每个量子比特3行
+                top_row = rows[r_top(q)]
+                mid_row = rows[r_mid(q)]
+                bot_row = rows[r_bot(q)]
+                
+                # 截取这一段
+                if is_first_segment:
+                    # 第一段包含前缀
+                    top_seg = top_row[:char_end]
+                    mid_seg = mid_row[:char_end]
+                    bot_seg = bot_row[:char_end]
+                else:
+                    # 后续段需要添加前缀和左箭头
+                    top_prefix = " " * prefix_w
+                    mid_prefix = label_mid[q] + " " * (prefix_w - len(label_mid[q]))
+                    bot_prefix = " " * prefix_w
+                    top_seg = top_prefix + " " + top_row[char_start:char_end]
+                    mid_seg = mid_prefix + arrow_left + mid_row[char_start:char_end]
+                    bot_seg = bot_prefix + " " + bot_row[char_start:char_end]
+                
+                # 添加右箭头（如果不是最后一段）
+                if not is_last_segment:
+                    top_seg += " "
+                    mid_seg += arrow_right
+                    bot_seg += " "
+                
+                segment_rows.append(top_seg)
+                segment_rows.append(mid_seg)
+                segment_rows.append(bot_seg)
+            
+            result_parts.append("\n".join(segment_rows))
+        
+        return "\n\n".join(result_parts)
     
     def _draw_mpl(self, figsize: tuple = None):
         """使用 matplotlib 绘制电路图"""

@@ -76,6 +76,10 @@ from .standard_gates import (
     MCXVChain,
     MCPhaseGate,
     MCU1Gate,
+    # 多控制旋转门
+    MCRXGate,
+    MCRYGate,
+    MCRZGate,
 )
 
 __all__ = [
@@ -152,4 +156,8 @@ __all__ = [
     'MCXVChain',
     'MCPhaseGate',
     'MCU1Gate',
+    # 多控制旋转门
+    'MCRXGate',
+    'MCRYGate',
+    'MCRZGate',
 ]

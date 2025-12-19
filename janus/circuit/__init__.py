@@ -4,7 +4,7 @@ Janus 量子电路模块
 提供量子电路的构建、操作和表示
 """
 from .operation import Operation
-from .gate import Gate
+from .gate import Gate, ControlledGate
 from .instruction import Instruction
 from .layer import Layer
 from .circuit import Circuit
@@ -45,6 +45,7 @@ __all__ = [
     # 核心类
     'Operation',
     'Gate',
+    'ControlledGate',
     'Instruction',
     'Layer',
     'Circuit',

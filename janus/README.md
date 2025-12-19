@@ -65,12 +65,12 @@ print(qc.draw())
 | R | `RGate` | - | θ, φ: 任意轴旋转 |
 
 ### 两比特旋转门
-| 门 | 类名 | 说明 |
-|---|------|------|
-| RXX | `RXXGate` | XX 旋转 |
-| RYY | `RYYGate` | YY 旋转 |
-| RZZ | `RZZGate` | ZZ 旋转 |
-| RZX | `RZXGate` | ZX 旋转 |
+| 门 | 类名 | 快捷方法 | 说明 |
+|---|------|---------|------|
+| RXX | `RXXGate` | `qc.rxx(θ, q1, q2)` | XX 旋转 |
+| RYY | `RYYGate` | `qc.ryy(θ, q1, q2)` | YY 旋转 |
+| RZZ | `RZZGate` | `qc.rzz(θ, q1, q2)` | ZZ 旋转 |
+| RZX | `RZXGate` | `qc.rzx(θ, q1, q2)` | ZX 旋转 |
 
 ### 两比特门
 | 门 | 类名 | 快捷方法 | 说明 |
@@ -79,11 +79,11 @@ print(qc.draw())
 | CY | `CYGate` | `qc.cy(c, t)` | 受控 Y |
 | CZ | `CZGate` | `qc.cz(c, t)` | 受控 Z |
 | CH | `CHGate` | `qc.ch(c, t)` | 受控 H |
-| CS | `CSGate` | - | 受控 S |
-| CS† | `CSdgGate` | - | 受控 S† |
-| CSX | `CSXGate` | - | 受控 √X |
-| DCX | `DCXGate` | - | Double CX |
-| ECR | `ECRGate` | - | Echoed Cross-Resonance |
+| CS | `CSGate` | `qc.cs(c, t)` | 受控 S |
+| CS† | `CSdgGate` | `qc.csdg(c, t)` | 受控 S† |
+| CSX | `CSXGate` | `qc.csx(c, t)` | 受控 √X |
+| DCX | `DCXGate` | `qc.dcx(q1, q2)` | Double CX |
+| ECR | `ECRGate` | `qc.ecr(q1, q2)` | Echoed Cross-Resonance |
 | SWAP | `SwapGate` | `qc.swap(q1, q2)` | 交换门 |
 | iSWAP | `iSwapGate` | `qc.iswap(q1, q2)` | iSWAP |
 
@@ -94,9 +94,9 @@ print(qc.draw())
 | CRY | `CRYGate` | `qc.cry(θ, c, t)` | 受控 RY |
 | CRZ | `CRZGate` | `qc.crz(θ, c, t)` | 受控 RZ |
 | CP | `CPhaseGate` | `qc.cp(θ, c, t)` | 受控 Phase |
-| CU1 | `CU1Gate` | - | 受控 U1 |
-| CU3 | `CU3Gate` | - | 受控 U3 |
-| CU | `CUGate` | - | 受控 U (带全局相位) |
+| CU1 | `CU1Gate` | `qc.cu1(λ, c, t)` | 受控 U1 |
+| CU3 | `CU3Gate` | `qc.cu3(θ, φ, λ, c, t)` | 受控 U3 |
+| CU | `CUGate` | `qc.cu(θ, φ, λ, γ, c, t)` | 受控 U (带全局相位) |
 
 ### 三比特及多比特门
 | 门 | 类名 | 快捷方法 | 说明 |
@@ -104,28 +104,84 @@ print(qc.draw())
 | CCX | `CCXGate` | `qc.ccx(c1, c2, t)` | Toffoli |
 | CCZ | `CCZGate` | `qc.ccz(c1, c2, t)` | 双控制 Z |
 | CSWAP | `CSwapGate` | `qc.cswap(c, t1, t2)` | Fredkin |
-| RCCX | `RCCXGate` | - | 简化 Toffoli |
-| RC3X | `RC3XGate` | - | 简化三控制 X |
-| C3X | `C3XGate` | - | 三控制 X |
-| C4X | `C4XGate` | - | 四控制 X |
+| RCCX | `RCCXGate` | `qc.rccx(c1, c2, t)` | 简化 Toffoli |
+| RC3X | `RC3XGate` | `qc.rc3x(c1, c2, c3, t)` | 简化三控制 X |
+| C3X | `C3XGate` | `qc.c3x(c1, c2, c3, t)` | 三控制 X |
+| C4X | `C4XGate` | `qc.c4x(c1, c2, c3, c4, t)` | 四控制 X |
 
 ### 多控制门 (新增)
-| 门 | 类名 | 说明 |
-|---|------|------|
-| C3SX | `C3SXGate` | 三控制 √X |
-| MCX | `MCXGate` | 多控制 X (通用) |
-| MCXGrayCode | `MCXGrayCode` | Gray code 实现 |
-| MCXRecursive | `MCXRecursive` | 递归实现 |
-| MCXVChain | `MCXVChain` | V-chain 实现 |
-| MCPhase | `MCPhaseGate` | 多控制 Phase |
-| MCU1 | `MCU1Gate` | 多控制 U1 |
+| 门 | 类名 | 快捷方法 | 说明 |
+|---|------|---------|------|
+| C3SX | `C3SXGate` | `qc.c3sx(c1, c2, c3, t)` | 三控制 √X |
+| MCX | `MCXGate` | `qc.mcx(ctrls, t)` | 多控制 X (通用) |
+| MCXGrayCode | `MCXGrayCode` | `qc.mcx_gray(ctrls, t)` | Gray code 实现 |
+| MCXRecursive | `MCXRecursive` | `qc.mcx_recursive(ctrls, t)` | 递归实现 |
+| MCXVChain | `MCXVChain` | `qc.mcx_vchain(ctrls, t)` | V-chain 实现 |
+| MCPhase | `MCPhaseGate` | `qc.mcp(θ, ctrls, t)` | 多控制 Phase |
+| MCU1 | `MCU1Gate` | `qc.mcu1(λ, ctrls, t)` | 多控制 U1 |
+
+### 多控制旋转门 (新增)
+| 门 | 类名 | 快捷方法 | 说明 |
+|---|------|---------|------|
+| MCRX | `MCRXGate` | `qc.mcrx(θ, ctrls, t)` | 多控制 RX |
+| MCRY | `MCRYGate` | `qc.mcry(θ, ctrls, t)` | 多控制 RY |
+| MCRZ | `MCRZGate` | `qc.mcrz(θ, ctrls, t)` | 多控制 RZ |
+
+```python
+from janus.circuit import Circuit
+import numpy as np
+
+qc = Circuit(4)
+
+# 使用快捷方法
+qc.mcx([0, 1], 2)              # 2 控制比特的 MCX
+qc.mcp(np.pi/4, [0, 1], 2)     # 2 控制比特的 MCPhase
+qc.mcrx(np.pi/4, [0, 1], 2)    # 2 控制比特的 MCRX
+qc.mcry(np.pi/3, [0, 1, 2], 3) # 3 控制比特的 MCRY
+qc.mcrz(np.pi/2, [0], 1)       # 1 控制比特的 MCRZ (等价于 CRZ)
+
+# 或直接使用 Gate 类
+from janus.circuit.library import MCRYGate
+mcry = MCRYGate(np.pi/4, num_ctrl_qubits=2)
+qc.append(mcry, [0, 1, 2])
+```
+
+### 链式调用创建受控门
+
+使用 `.gate().control()` 链式调用，可以将任意门转换为受控版本：
+
+```python
+from janus.circuit import Circuit
+from janus.circuit.library import U3Gate, RXGate, HGate
+import numpy as np
+
+qc = Circuit(4)
+
+# 单控制 RX 门
+qc.gate(RXGate(np.pi/4), 2).control(0)
+
+# 双控制 H 门 (CCH)
+qc.gate(HGate(), 2).control([0, 1])
+
+# 三控制 U3 门
+qc.gate(U3Gate(np.pi/4, np.pi/4, np.pi/4), 3).control([0, 1, 2])
+
+# 不添加控制，直接添加门
+qc.gate(RXGate(np.pi/2), 0).add()
+
+# 也可以直接在 Gate 上调用 .control()
+u3 = U3Gate(np.pi/4, 0, 0)
+cu3 = u3.control(1)      # 单控制
+ccu3 = u3.control(2)     # 双控制
+qc.append(cu3, [0, 1])   # 控制比特 0，目标比特 1
+```
 
 ### 特殊门
-| 门 | 类名 | 说明 |
-|---|------|------|
-| XX-YY | `XXMinusYYGate` | XX-YY 相互作用 |
-| XX+YY | `XXPlusYYGate` | XX+YY 相互作用 |
-| GlobalPhase | `GlobalPhaseGate` | 全局相位 |
+| 门 | 类名 | 快捷方法 | 说明 |
+|---|------|---------|------|
+| XX-YY | `XXMinusYYGate` | `qc.xx_minus_yy(θ, β, q1, q2)` | XX-YY 相互作用 |
+| XX+YY | `XXPlusYYGate` | `qc.xx_plus_yy(θ, β, q1, q2)` | XX+YY 相互作用 |
+| GlobalPhase | `GlobalPhaseGate` | `qc.global_phase(φ)` | 全局相位 |
 
 ### 特殊操作
 | 操作 | 类名 | 快捷方法 | 说明 |
@@ -133,7 +189,7 @@ print(qc.draw())
 | Barrier | `Barrier` | `qc.barrier()` | 屏障 |
 | Measure | `Measure` | `qc.measure(q, c)` | 测量 |
 | Reset | `Reset` | `qc.reset(q)` | 重置 |
-| Delay | `Delay` | - | 延迟 |
+| Delay | `Delay` | `qc.delay(duration, q)` | 延迟 |
 
 ## 电路可视化
 
@@ -141,6 +197,15 @@ print(qc.draw())
 
 ```python
 print(qc.draw())
+
+# 指定每行显示的层数（折叠）
+print(qc.draw(fold=3))  # 每行最多显示 3 层
+
+# 指定每行最大字符数（自动计算层数）
+print(qc.draw(line_length=80))
+
+# 禁用折叠（显示完整电路）
+print(qc.draw(fold=-1))
 ```
 
 输出示例：
@@ -149,6 +214,30 @@ q0: ──H────●────RX(1.57)──
            │
 q1: ───────X──────────────
 ```
+
+当电路较宽时，会自动根据终端宽度折叠成多行显示，使用 `»` 和 `«` 作为分页连续符号：
+```
+      ┌─────────┐                   ┌─────────┐
+q0: ──┤    h    ├─────────●─────────┤rx(0.79) ├──»
+      └─────────┘         │         └─────────┘
+                     ┌────┬────┐    ┌─────────┐
+q1: ─────────────────┤    X    ├────┤ry(1.57) ├──»
+                     └─────────┘    └─────────┘
+
+                      ┌─────────┐
+q0: «───────●─────────┤    h    ├──
+            │         └─────────┘
+       ┌────┬────┐
+q1: «──┤    X    ├─────────────────
+       └────┴────┘
+```
+
+特性：
+- 自动检测终端宽度进行分页
+- 控制点在上方时，目标门顶部显示 `┬` 连接点
+- 控制点在下方时，目标门底部显示 `┴` 连接点
+- 竖线穿过其他门时，正确显示连接点
+- 支持 GBK 编码终端（自动使用 ASCII 字符）
 
 ### PNG 图像导出
 

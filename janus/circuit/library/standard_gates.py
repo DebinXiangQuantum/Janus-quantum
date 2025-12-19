@@ -1569,3 +1569,124 @@ class MCU1Gate(Gate):
         g._qubits = self._qubits.copy()
         g._params = self._params.copy()
         return g
+
+
+# ==================== 多控制旋转门 ====================
+
+class MCRXGate(Gate):
+    """MCRX 门 - 多控制 RX 门
+    
+    当所有控制比特为 |1⟩ 时，对目标比特应用 RX(θ) 旋转
+    """
+    def __init__(self, theta: float, num_ctrl_qubits: int, label: Optional[str] = None):
+        self._num_ctrl_qubits = num_ctrl_qubits
+        super().__init__('mcrx', num_ctrl_qubits + 1, [theta], label)
+    
+    @property
+    def num_ctrl_qubits(self) -> int:
+        return self._num_ctrl_qubits
+    
+    @property
+    def theta(self) -> float:
+        return self._params[0]
+    
+    def to_matrix(self) -> np.ndarray:
+        """返回 MCRX 门的矩阵表示"""
+        dim = 2 ** self._num_qubits
+        mat = np.eye(dim, dtype=complex)
+        theta = self._params[0]
+        c, s = np.cos(theta / 2), np.sin(theta / 2)
+        # RX 矩阵
+        rx = np.array([[c, -1j * s], [-1j * s, c]], dtype=complex)
+        # 当所有控制比特为 |1⟩ 时应用 RX
+        mat[dim-2:dim, dim-2:dim] = rx
+        return mat
+    
+    def inverse(self) -> 'MCRXGate':
+        return MCRXGate(-self._params[0], self._num_ctrl_qubits, self._label)
+    
+    def copy(self) -> 'MCRXGate':
+        g = MCRXGate(self._params[0], self._num_ctrl_qubits, self._label)
+        g._qubits = self._qubits.copy()
+        g._params = self._params.copy()
+        return g
+
+
+class MCRYGate(Gate):
+    """MCRY 门 - 多控制 RY 门
+    
+    当所有控制比特为 |1⟩ 时，对目标比特应用 RY(θ) 旋转
+    """
+    def __init__(self, theta: float, num_ctrl_qubits: int, label: Optional[str] = None):
+        self._num_ctrl_qubits = num_ctrl_qubits
+        super().__init__('mcry', num_ctrl_qubits + 1, [theta], label)
+    
+    @property
+    def num_ctrl_qubits(self) -> int:
+        return self._num_ctrl_qubits
+    
+    @property
+    def theta(self) -> float:
+        return self._params[0]
+    
+    def to_matrix(self) -> np.ndarray:
+        """返回 MCRY 门的矩阵表示"""
+        dim = 2 ** self._num_qubits
+        mat = np.eye(dim, dtype=complex)
+        theta = self._params[0]
+        c, s = np.cos(theta / 2), np.sin(theta / 2)
+        # RY 矩阵
+        ry = np.array([[c, -s], [s, c]], dtype=complex)
+        # 当所有控制比特为 |1⟩ 时应用 RY
+        mat[dim-2:dim, dim-2:dim] = ry
+        return mat
+    
+    def inverse(self) -> 'MCRYGate':
+        return MCRYGate(-self._params[0], self._num_ctrl_qubits, self._label)
+    
+    def copy(self) -> 'MCRYGate':
+        g = MCRYGate(self._params[0], self._num_ctrl_qubits, self._label)
+        g._qubits = self._qubits.copy()
+        g._params = self._params.copy()
+        return g
+
+
+class MCRZGate(Gate):
+    """MCRZ 门 - 多控制 RZ 门
+    
+    当所有控制比特为 |1⟩ 时，对目标比特应用 RZ(θ) 旋转
+    """
+    def __init__(self, theta: float, num_ctrl_qubits: int, label: Optional[str] = None):
+        self._num_ctrl_qubits = num_ctrl_qubits
+        super().__init__('mcrz', num_ctrl_qubits + 1, [theta], label)
+    
+    @property
+    def num_ctrl_qubits(self) -> int:
+        return self._num_ctrl_qubits
+    
+    @property
+    def theta(self) -> float:
+        return self._params[0]
+    
+    def to_matrix(self) -> np.ndarray:
+        """返回 MCRZ 门的矩阵表示"""
+        dim = 2 ** self._num_qubits
+        mat = np.eye(dim, dtype=complex)
+        theta = self._params[0]
+        # RZ 矩阵
+        rz = np.array([
+            [np.exp(-1j * theta / 2), 0],
+            [0, np.exp(1j * theta / 2)]
+        ], dtype=complex)
+        # 当所有控制比特为 |1⟩ 时应用 RZ
+        mat[dim-2:dim, dim-2:dim] = rz
+        return mat
+    
+    def inverse(self) -> 'MCRZGate':
+        return MCRZGate(-self._params[0], self._num_ctrl_qubits, self._label)
+    
+    def copy(self) -> 'MCRZGate':
+        g = MCRZGate(self._params[0], self._num_ctrl_qubits, self._label)
+        g._qubits = self._qubits.copy()
+        g._params = self._params.copy()
+        return g
