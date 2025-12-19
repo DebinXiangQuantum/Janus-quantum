@@ -1021,9 +1021,9 @@ class Circuit:
             bx_mid_l, bx_mid_r = "┤", "├"
             bx_top_conn = "┬"
 
-        cell_w = 15  # 增加宽度以容纳参数
+        cell_w = 23  # 增加宽度以容纳参数
         center = cell_w // 2
-        box_w = 11  # 盒子宽度增加以容纳参数
+        box_w = 19  # 盒子宽度增加以容纳参数
         box_center = box_w // 2
         box_start = center - box_center
         box_end = box_start + box_w - 1
@@ -1035,62 +1035,113 @@ class Circuit:
             seg = [ch_wire] * cell_w
             return seg
 
+        def _pi_check(val: float, short: bool = False) -> str:
+            """将数值转换为 π 表示形式（参考 Qiskit pi_check）
+            
+            Args:
+                val: 数值
+                short: 是否使用短格式
+            
+            Returns:
+                str: π 表示或数值字符串
+            """
+            import math
+            eps = 1e-6
+            
+            if abs(val) < eps:
+                return "0"
+            
+            neg = "-" if val < 0 else ""
+            abs_val = abs(val)
+            
+            # 检查是否是 π 的整数倍
+            pi_mult = abs_val / math.pi
+            if abs(pi_mult - round(pi_mult)) < eps:
+                mult = int(round(pi_mult))
+                if mult == 1:
+                    return f"{neg}π"
+                else:
+                    return f"{neg}{mult}π"
+            
+            # 检查是否是 π/n 形式 (n = 2,3,4,5,6,8,12)
+            # 短格式使用更紧凑的表示
+            for denom in [2, 3, 4, 5, 6, 8, 12]:
+                frac_val = math.pi / denom
+                if abs(abs_val - frac_val) < eps:
+                    if short and denom == 2:
+                        return f"{neg}π/2"
+                    return f"{neg}π/{denom}"
+                # 检查 n*π/m 形式
+                for numer in range(2, 16):
+                    if abs(abs_val - numer * frac_val) < eps:
+                        if short:
+                            # 短格式：尝试约分或使用小数
+                            from math import gcd
+                            g = gcd(numer, denom)
+                            n, d = numer // g, denom // g
+                            if d == 1:
+                                return f"{neg}{n}π"
+                            return f"{neg}{n}π/{d}"
+                        return f"{neg}{numer}π/{denom}"
+            
+            # 不是 π 的简单分数，返回数值
+            if short:
+                # 短格式：最多2位有效数字
+                if abs_val >= 100:
+                    return f"{int(round(val))}"
+                elif abs_val >= 10:
+                    return f"{val:.0f}"
+                elif abs_val >= 1:
+                    return f"{val:.1f}"
+                else:
+                    return f"{val:.2f}"
+            else:
+                # 标准格式：保留2位小数
+                if abs_val >= 100:
+                    return f"{int(round(val))}"
+                elif abs_val >= 10:
+                    return f"{val:.1f}"
+                else:
+                    return f"{val:.2f}"
+        
         def _format_gate_label(name: str, params: list) -> str:
             """格式化门标签，包含参数"""
             if not params:
                 return name
-            import math
+            
             max_label_len = box_w - 2  # 盒子内可用宽度
+            
+            # 第一遍：使用 π 表示（标准格式）
             param_strs = []
             for p in params:
                 if isinstance(p, (int, float)):
-                    pi_mult = p / math.pi
-                    if abs(pi_mult - round(pi_mult)) < 0.01 and abs(round(pi_mult)) <= 4:
-                        mult = round(pi_mult)
-                        if mult == 0:
-                            param_strs.append("0")
-                        elif mult == 1:
-                            param_strs.append("pi")
-                        elif mult == -1:
-                            param_strs.append("-pi")
-                        else:
-                            param_strs.append(f"{mult}pi")
-                    else:
-                        # 根据数值大小选择精度
-                        if abs(p) < 10:
-                            param_strs.append(f"{p:.2f}")
-                        else:
-                            param_strs.append(f"{p:.1f}")
+                    param_strs.append(_pi_check(p, short=False))
                 else:
                     param_strs.append(str(p)[:4])
             
-            # 构建标签并检查长度
             label = name + "(" + ",".join(param_strs) + ")"
             if len(label) <= max_label_len:
                 return label
             
-            # 如果太长，尝试缩短参数
-            short_params = []
+            # 第二遍：使用短格式
+            param_strs = []
             for p in params:
                 if isinstance(p, (int, float)):
-                    pi_mult = p / math.pi
-                    if abs(pi_mult - round(pi_mult)) < 0.01:
-                        mult = round(pi_mult)
-                        if mult == 0:
-                            short_params.append("0")
-                        elif mult == 1:
-                            short_params.append("π")
-                        elif mult == -1:
-                            short_params.append("-π")
-                        else:
-                            short_params.append(f"{mult}π")
-                    else:
-                        short_params.append(f"{p:.1f}")
+                    param_strs.append(_pi_check(p, short=True))
                 else:
-                    short_params.append(str(p)[:3])
+                    param_strs.append(str(p)[:3])
             
-            label = name + "(" + ",".join(short_params) + ")"
-            return label[:max_label_len]
+            label = name + "(" + ",".join(param_strs) + ")"
+            if len(label) <= max_label_len:
+                return label
+            
+            # 第三遍：截断参数部分，保留括号
+            params_str = ",".join(param_strs)
+            available = max_label_len - len(name) - 2  # 减去 name 和 "()"
+            if available > 0:
+                return name + "(" + params_str[:available] + ")"
+            else:
+                return name[:max_label_len]
 
         def _put(seg: list[str], col: int, s: str):
             for k, ch in enumerate(s):

@@ -65,7 +65,17 @@ class CancelInversesPass(BasePass):
     """
     
     # 自逆门（自己是自己的逆）
-    SELF_INVERSE = {'x', 'y', 'z', 'h', 'cx', 'cz', 'swap'}
+    SELF_INVERSE = {
+        # 单比特 Pauli 门
+        'x', 'y', 'z', 'h',
+        # 两比特门
+        'cx', 'cy', 'cz', 'ch', 'swap', 'iswap', 'dcx', 'ecr',
+        # 三比特门
+        'ccx', 'ccz', 'cswap',
+        # 多控制门
+        'mcx', 'mcx_gray', 'mcx_recursive', 'mcx_vchain',
+        'c3x', 'c4x', 'rccx', 'rc3x',
+    }
     
     @property
     def name(self) -> str:
@@ -132,7 +142,17 @@ class MergeRotationsPass(BasePass):
     例如: RZ(a) - RZ(b) -> RZ(a+b)
     """
     
-    ROTATION_GATES = {'rx', 'ry', 'rz'}
+    # 单参数旋转门（可以合并角度）
+    ROTATION_GATES = {
+        # 单比特旋转门
+        'rx', 'ry', 'rz', 'p', 'u1',
+        # 两比特旋转门
+        'rxx', 'ryy', 'rzz', 'rzx',
+        # 受控旋转门
+        'crx', 'cry', 'crz', 'cp', 'cu1',
+        # 多控制旋转门
+        'mcrx', 'mcry', 'mcrz', 'mcp', 'mcphase', 'mcu1',
+    }
     
     @property
     def name(self) -> str:
