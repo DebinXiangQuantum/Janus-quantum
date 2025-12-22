@@ -1,19 +1,12 @@
 from __future__ import annotations
-from typing import Optional
-import numpy as np
-
 from ..circuit.circuit import Circuit
-from ..circuit.dag import DAGCircuit, circuit_to_dag
+from ..circuit.dag import  circuit_to_dag
 from ..circuit.gate import Gate
-from ..circuit.library.standard_gates import XGate, YGate, ZGate, RXGate, RYGate, RZGate, CXGate, HGate, CZGate, CRZGate, SGate
-from .exceptions import UnsupportedMethodError, CircuitError
 from .decompose_multi_control_toffoli import decompose_multi_control_toffoli
 
 def decompose_controlled_gate(
     gate: Gate,
     num_ctrl_qubits: int = 1,
-    num_ancilla_qubits: int = 0,
-    ancilla_type: str = "clean",
     use_dag: bool = False
 ) -> Circuit:
     """
@@ -22,8 +15,6 @@ def decompose_controlled_gate(
     Args:
         gate: 要分解的门
         num_ctrl_qubits: 控制量子比特数量
-        num_ancilla_qubits: 辅助量子比特数量
-        ancilla_type: 辅助量子比特类型（"clean" 或 "dirty"）
         use_dag: 是否返回DAGCircuit
         
     Returns:
@@ -84,7 +75,6 @@ def _decompose_general_controlled_gate(gate: Gate, num_ctrl_qubits: int) -> Circ
         
         if gate.name == "y":
             # 多控制 Y 门分解：Y = iXZ，所以受控 Y = i受控 X 受控 Z
-            # 这里简化处理，先转换为 X 门分解
             # 在目标比特上应用 H 和 S 门，将 Y 转换为 X
             circuit.h(target)
             circuit.s(target)

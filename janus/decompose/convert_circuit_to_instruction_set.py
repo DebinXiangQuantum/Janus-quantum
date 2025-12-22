@@ -1,13 +1,13 @@
 from __future__ import annotations
-from typing import Optional, List, Union
+from typing import Optional, List
 import numpy as np
-from janus.circuit import Circuit, Gate
+from janus.circuit import Circuit
 from janus.circuit.converters import GATE_MAP
 from janus.circuit.dag import circuit_to_dag
 from janus.circuit.library.standard_gates import (
-    HGate, XGate, YGate, ZGate, SGate, TGate,
+    HGate, XGate, YGate, ZGate, 
     RXGate, RYGate, RZGate, UGate,
-    CXGate, CZGate, CRZGate, SwapGate
+    CXGate
 )
 from .exceptions import ParameterError, GateNotSupportedError
 
@@ -33,8 +33,6 @@ def convert_circuit_to_instruction_set(
     Returns:
         转换后的电路
     """
-    if not isinstance(circuit, Circuit):
-        raise ParameterError("Input must be a valid Janus Circuit object.")
     
     if not isinstance(instruction_set, list) or not instruction_set:
         raise ParameterError("instruction_set must be a non-empty list of strings.")

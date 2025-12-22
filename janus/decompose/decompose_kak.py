@@ -9,9 +9,7 @@ from .exceptions import DecomposeError, ParameterError
 
 def decompose_kak(
     unitary_or_gate,
-    fidelity: float = 1.0 - 1.0e-9,
     euler_basis: str = 'ZXZ',
-    simplify: bool = False,
     use_dag: bool = False,
     atol: float = 1e-12,
 ):
@@ -35,21 +33,20 @@ def decompose_kak(
         unitary_matrix = U @ Vh
     
     if num_qubits == 1:
-        return decompose_one_qubit(unitary_matrix, basis=euler_basis, simplify=simplify, use_dag=use_dag, atol=atol)
+        return decompose_one_qubit(unitary_matrix, basis=euler_basis, use_dag=use_dag, atol=atol)
     elif num_qubits == 2:
-        return _decompose_two_qubit_kak(unitary_matrix, euler_basis=euler_basis, simplify=simplify, use_dag=use_dag, atol=atol)
+        return _decompose_two_qubit_kak(unitary_matrix, euler_basis=euler_basis,  use_dag=use_dag, atol=atol)
     else:
-        return _decompose_multi_qubit_kak(unitary_matrix, num_qubits, euler_basis=euler_basis, simplify=simplify, use_dag=use_dag, atol=atol)
+        return _decompose_multi_qubit_kak(unitary_matrix, num_qubits, euler_basis=euler_basis, use_dag=use_dag, atol=atol)
 
 
-def _decompose_two_qubit_kak(unitary_matrix, euler_basis='ZXZ', simplify=False, use_dag=False, atol=1e-12):
+def _decompose_two_qubit_kak(unitary_matrix, euler_basis='ZXZ',  use_dag=False, atol=1e-12):
     """
     实现两量子比特KAK分解算法
     
     Args:
         unitary_matrix: 两量子比特酉矩阵
         euler_basis: 单量子比特门的Euler分解基
-        simplify: 是否简化电路
         use_dag: 是否返回DAGCircuit
         atol: 容差
     
@@ -96,7 +93,6 @@ def _decompose_two_qubit_kak(unitary_matrix, euler_basis='ZXZ', simplify=False, 
     decomposed_h_left = decompose_one_qubit(
         h_matrix, 
         basis=euler_basis, 
-        simplify=simplify, 
         use_dag=False, 
         atol=atol
     )
@@ -119,8 +115,7 @@ def _decompose_two_qubit_kak(unitary_matrix, euler_basis='ZXZ', simplify=False, 
     ])
     decomposed_u_left = decompose_one_qubit(
         u_matrix, 
-        basis=euler_basis, 
-        simplify=simplify, 
+        basis=euler_basis,  
         use_dag=False, 
         atol=atol
     )
@@ -132,7 +127,6 @@ def _decompose_two_qubit_kak(unitary_matrix, euler_basis='ZXZ', simplify=False, 
     decomposed_u_right1 = decompose_one_qubit(
         u_matrix, 
         basis=euler_basis, 
-        simplify=simplify, 
         use_dag=False, 
         atol=atol
     )
@@ -143,31 +137,31 @@ def _decompose_two_qubit_kak(unitary_matrix, euler_basis='ZXZ', simplify=False, 
     decomposed_h_right = decompose_one_qubit(
         h_matrix, 
         basis=euler_basis, 
-        simplify=simplify, 
         use_dag=False, 
         atol=atol
     )
     for inst in decomposed_h_right.instructions:
         circuit.append(inst.operation, [1])
     
-    u1 = np.array([[np.exp(1j*theta1), 0], [0, np.exp(-1j*theta1)]])
-    u2 = np.array([[np.exp(1j*theta2), 0], [0, np.exp(-1j*theta2)]])
-    u3 = np.array([[np.exp(1j*theta3), 0], [0, np.exp(-1j*theta3)]])
+    # 注意：我们已经通过decompose_one_qubit添加了H和U门，不需要再直接添加
+    # u1 = np.array([[np.exp(1j*theta1), 0], [0, np.exp(-1j*theta1)]])
+    # u2 = np.array([[np.exp(1j*theta2), 0], [0, np.exp(-1j*theta2)]])
+    # u3 = np.array([[np.exp(1j*theta3), 0], [0, np.exp(-1j*theta3)]])
     
-    # 添加左单量子比特门
-    circuit.h(0)
-    circuit.u(np.pi/2, 0, np.pi/2, 1)
+    # # 添加左单量子比特门
+    # circuit.h(0)
+    # circuit.u(np.pi/2, 0, np.pi/2, 1)
     
-    # 添加右单量子比特门
-    circuit.u(np.pi/2, 0, np.pi/2, 0)
-    circuit.h(1)
+    # # 添加右单量子比特门
+    # circuit.u(np.pi/2, 0, np.pi/2, 0)
+    # circuit.h(1)
     
     if use_dag:
         return circuit_to_dag(circuit)
     return circuit
 
 
-def _decompose_multi_qubit_kak(unitary_matrix, num_qubits, euler_basis='ZXZ', simplify=False, use_dag=False, atol=1e-12):
+def _decompose_multi_qubit_kak(unitary_matrix, num_qubits, euler_basis='ZXZ', use_dag=False, atol=1e-12):
     """
     多量子比特KAK分解的完整实现
     
@@ -216,7 +210,6 @@ def _decompose_multi_qubit_kak(unitary_matrix, num_qubits, euler_basis='ZXZ', si
         two_qubit_circuit = _decompose_two_qubit_kak(
             two_qubit_unitary, 
             euler_basis=euler_basis, 
-            simplify=simplify, 
             use_dag=False, 
             atol=atol
         )
@@ -242,7 +235,6 @@ def _decompose_multi_qubit_kak(unitary_matrix, num_qubits, euler_basis='ZXZ', si
         decomposed_h = decompose_one_qubit(
             h_matrix, 
             basis=euler_basis, 
-            simplify=simplify, 
             use_dag=False, 
             atol=atol
         )
@@ -251,11 +243,7 @@ def _decompose_multi_qubit_kak(unitary_matrix, num_qubits, euler_basis='ZXZ', si
         for inst in decomposed_h.instructions:
             circuit.append(inst.operation, [q])
     
-    # 如果需要简化电路
-    if simplify:
-        # 这里可以添加电路简化逻辑
-        pass
-    
+ 
     if use_dag:
         return circuit_to_dag(circuit)
     return circuit
