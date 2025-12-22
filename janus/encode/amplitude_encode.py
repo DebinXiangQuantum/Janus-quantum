@@ -263,7 +263,7 @@ def _output(angle_tree: NodeAngleTree, qubits: List[int], output_list: List[int]
         output_list.append(angle_tree.qubit_index)
 
 
-def bid_amplitude_encode(
+def bidrc_encode(
     data: List[float],
     split: int = 0,
     mode: Literal['full', 'top_down', 'bottom_up'] = 'full'
