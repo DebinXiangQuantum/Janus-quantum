@@ -33,7 +33,23 @@ class Gate(Operation):
         self._params = params if params is not None else []
         self._label = label
         self._qubits: List[int] = []  # 实际作用的量子比特，在添加到电路时设置
-    
+        self._definition = None  # 门的定义(子电路),用于分解复合门
+
+    @property
+    def definition(self):
+        """
+        门的定义电路(用于分解复合门)
+
+        Returns:
+            Circuit或None: 如果门是复合门,返回其定义电路;否则返回None
+        """
+        return self._definition
+
+    @definition.setter
+    def definition(self, value):
+        """设置门的定义电路"""
+        self._definition = value
+
     @property
     def name(self) -> str:
         return self._name
@@ -41,7 +57,12 @@ class Gate(Operation):
     @property
     def num_qubits(self) -> int:
         return self._num_qubits
-    
+
+    @num_qubits.setter
+    def num_qubits(self, value: int):
+        """Set the number of qubits (for special gates like QFT)"""
+        self._num_qubits = value
+
     @property
     def params(self) -> List[float]:
         return self._params
@@ -84,12 +105,30 @@ class Gate(Operation):
         """
         raise NotImplementedError(f"inverse not implemented for {self._name}")
     
+    def is_parameterized(self) -> bool:
+        """
+        检查门是否包含参数化的参数
+
+        Returns:
+            如果门包含Parameter对象则返回True,否则返回False
+        """
+        from .parameter import Parameter, ParameterExpression
+
+        if not self._params:
+            return False
+
+        for param in self._params:
+            if isinstance(param, (Parameter, ParameterExpression)):
+                return True
+
+        return False
+
     def copy(self) -> 'Gate':
         """创建门的副本"""
         new_gate = Gate(self._name, self._num_qubits, self._params.copy(), self._label)
         new_gate._qubits = self._qubits.copy()
         return new_gate
-    
+
     def __repr__(self) -> str:
         if self._params:
             return f"{self._name}({', '.join(map(str, self._params))})"
@@ -116,147 +155,3 @@ class Gate(Operation):
         gate = cls(data['name'], len(data['qubits']), data.get('params', []))
         gate.qubits = data['qubits']
         return gate
-
-    def control(self, num_ctrl_qubits: int = 1, label: Optional[str] = None, 
-                ctrl_state: Optional[Union[str, int]] = None) -> 'ControlledGate':
-        """
-        返回该门的受控版本
-        
-        Args:
-            num_ctrl_qubits: 控制比特数量，默认为 1
-            label: 可选的标签
-            ctrl_state: 控制状态（暂未实现，保留接口）
-        
-        Returns:
-            ControlledGate: 受控门
-        
-        Example:
-            # 创建受控 U3 门
-            u3 = U3Gate(np.pi/4, np.pi/4, np.pi/4)
-            cu3 = u3.control(1)  # 单控制
-            ccu3 = u3.control(2)  # 双控制
-        """
-        return ControlledGate(
-            base_gate=self,
-            num_ctrl_qubits=num_ctrl_qubits,
-            label=label,
-            ctrl_state=ctrl_state
-        )
-
-
-class ControlledGate(Gate):
-    """
-    受控门类
-    
-    将任意门转换为受控版本
-    
-    Attributes:
-        base_gate: 基础门
-        num_ctrl_qubits: 控制比特数量
-        ctrl_state: 控制状态
-    """
-    
-    def __init__(
-        self,
-        base_gate: Gate,
-        num_ctrl_qubits: int = 1,
-        label: Optional[str] = None,
-        ctrl_state: Optional[Union[str, int]] = None
-    ):
-        self._base_gate = base_gate
-        self._num_ctrl_qubits = num_ctrl_qubits
-        self._ctrl_state = ctrl_state if ctrl_state is not None else (1 << num_ctrl_qubits) - 1
-        
-        # 构建名称
-        if num_ctrl_qubits == 1:
-            name = f"c{base_gate.name}"
-        else:
-            name = f"mc{base_gate.name}"
-        
-        # 总量子比特数 = 控制比特 + 基础门的量子比特
-        total_qubits = num_ctrl_qubits + base_gate.num_qubits
-        
-        super().__init__(
-            name=name,
-            num_qubits=total_qubits,
-            params=base_gate.params.copy(),
-            label=label
-        )
-    
-    @property
-    def base_gate(self) -> Gate:
-        """获取基础门"""
-        return self._base_gate
-    
-    @property
-    def ctrl_qubits(self) -> int:
-        """获取控制比特数量"""
-        return self._num_ctrl_qubits
-    
-    @property
-    def ctrl_state(self) -> int:
-        """获取控制状态"""
-        return self._ctrl_state
-    
-    def to_matrix(self) -> np.ndarray:
-        """
-        返回受控门的酉矩阵
-        
-        构建方式：在控制比特为 |1...1⟩ 时应用基础门
-        """
-        base_matrix = self._base_gate.to_matrix()
-        base_dim = base_matrix.shape[0]
-        total_dim = 2 ** self._num_qubits
-        
-        # 创建单位矩阵
-        matrix = np.eye(total_dim, dtype=complex)
-        
-        # 控制状态对应的索引范围
-        ctrl_mask = self._ctrl_state << self._base_gate.num_qubits
-        
-        # 在控制状态为全 1 时，替换对应的子矩阵
-        for i in range(base_dim):
-            for j in range(base_dim):
-                row = ctrl_mask | i
-                col = ctrl_mask | j
-                matrix[row, col] = base_matrix[i, j]
-        
-        return matrix
-    
-    def inverse(self) -> 'ControlledGate':
-        """返回受控门的逆"""
-        return ControlledGate(
-            base_gate=self._base_gate.inverse(),
-            num_ctrl_qubits=self._num_ctrl_qubits,
-            label=self._label,
-            ctrl_state=self._ctrl_state
-        )
-    
-    def copy(self) -> 'ControlledGate':
-        """创建受控门的副本"""
-        new_gate = ControlledGate(
-            base_gate=self._base_gate.copy(),
-            num_ctrl_qubits=self._num_ctrl_qubits,
-            label=self._label,
-            ctrl_state=self._ctrl_state
-        )
-        new_gate._qubits = self._qubits.copy()
-        return new_gate
-    
-    def control(self, num_ctrl_qubits: int = 1, label: Optional[str] = None,
-                ctrl_state: Optional[Union[str, int]] = None) -> 'ControlledGate':
-        """
-        在受控门上再添加控制
-        
-        Args:
-            num_ctrl_qubits: 额外的控制比特数量
-        
-        Returns:
-            新的受控门，控制比特数量累加
-        """
-        return ControlledGate(
-            base_gate=self._base_gate,
-            num_ctrl_qubits=self._num_ctrl_qubits + num_ctrl_qubits,
-            label=label,
-            ctrl_state=ctrl_state
-        )
