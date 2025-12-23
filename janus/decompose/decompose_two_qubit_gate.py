@@ -13,9 +13,9 @@ import numpy as np
 from .exceptions import DecomposeError, ParameterError, GateNotSupportedError
 
 # 导入Janus包的组件
-from circuit import Circuit, Gate
-from circuit.dag import DAGCircuit, circuit_to_dag
-from circuit.library.standard_gates import (
+from janus.circuit import Circuit, Gate
+from janus.circuit.dag import DAGCircuit, circuit_to_dag
+from janus.circuit.library.standard_gates import (
     CXGate, UGate, RXGate, RYGate, RZGate, XGate, CZGate, CRZGate,
     HGate, YGate, ZGate, SGate, SdgGate, TGate, TdgGate, SwapGate
 )

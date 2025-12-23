@@ -1,25 +1,18 @@
 from __future__ import annotations
-import numpy as np
-from circuit.circuit import Circuit
-from circuit.dag import DAGCircuit, circuit_to_dag
-from circuit.library.standard_gates import HGate, CXGate, TGate, TdgGate, ZGate
-from .exceptions import UnsupportedMethodError
+from janus.circuit.circuit import Circuit
+from janus.circuit.dag import  circuit_to_dag
 
 
 def decompose_multi_control_toffoli(
     num_ctrl_qubits: int,
-    num_ancilla_qubits: int = None,
-    ancilla_type: str = "clean",
     use_dag: bool = False,
-    **kwargs
+   
 ) -> Circuit:
     """
     分解多控制Toffoli门为基本门
     
     Args:
         num_ctrl_qubits: 控制量子比特数量
-        num_ancilla_qubits: 辅助量子比特数量
-        ancilla_type: 辅助量子比特类型
         use_dag: 是否返回DAGCircuit
         
     Returns:
