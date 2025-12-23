@@ -1,8 +1,8 @@
 """
 Quantum Fourier Transform (QFT) gate
 """
-from circuit import Circuit
-from circuit.gate import Gate
+from ..circuit import Circuit
+from ..gate import Gate
 import numpy as np
 
 

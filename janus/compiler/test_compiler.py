@@ -2,7 +2,7 @@
 Janus 编译器测试
 """
 import numpy as np
-from circuit import Circuit
+from janus.circuit import Circuit
 from janus.compiler import compile_circuit, CancelInversesPass, MergeRotationsPass
 
 

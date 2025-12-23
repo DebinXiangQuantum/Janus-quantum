@@ -2,7 +2,7 @@
 Janus Circuit 测试
 """
 import numpy as np
-from circuit import Circuit, HGate, CXGate
+from janus.circuit import Circuit, HGate, CXGate
 
 
 def test_basic_circuit():
@@ -92,7 +92,7 @@ def test_to_dict():
 
 def test_array_conversion():
     """测试数组转换"""
-    from circuit.converters import to_instruction_list, from_instruction_list
+    from janus.circuit.converters import to_instruction_list, from_instruction_list
     
     print("\n=== Array Conversion ===")
     

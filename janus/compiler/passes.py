@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from typing import List, Optional
 import numpy as np
 
-from circuit.dag import DAGCircuit, DAGNode, NodeType
+from janus.circuit.dag import DAGCircuit, DAGNode, NodeType
 
 
 class BasePass(ABC):

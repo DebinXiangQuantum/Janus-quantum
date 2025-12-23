@@ -3,8 +3,8 @@ Janus 编译器主模块
 """
 from typing import List, Optional
 
-from circuit import Circuit
-from circuit.dag import circuit_to_dag, dag_to_circuit
+from janus.circuit import Circuit
+from janus.circuit.dag import circuit_to_dag, dag_to_circuit
 from .passes import BasePass, RemoveIdentityPass, CancelInversesPass, MergeRotationsPass
 
 
