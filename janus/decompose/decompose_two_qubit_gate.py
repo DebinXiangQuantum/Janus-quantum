@@ -17,7 +17,7 @@ from janus.circuit import Circuit, Gate
 from janus.circuit.dag import DAGCircuit, circuit_to_dag
 from janus.circuit.library.standard_gates import (
     CXGate, UGate, RXGate, RYGate, RZGate, XGate, CZGate, CRZGate,
-    HGate, YGate, ZGate, SGate, SdgGate, TGate, TdgGate, SwapGate
+    HGate, YGate, ZGate, SGate, SdgGate, TGate, TdgGate, SwapGate, RXXGate
 )
 
 # 导入其他分解函数
@@ -33,6 +33,7 @@ logger = logging.getLogger(__name__)
 GATE_NAME_MAP = {
     "cx": CXGate,
     "cz": CZGate,
+    "rxx": RXXGate,
 }
 
 # 扩展门名称映射，包括需要参数的门
@@ -67,14 +68,14 @@ def decompose_two_qubit_gate(unitary, basis_gate='cx', use_dag=False, atol=DEFAU
 
     参数:
         unitary (np.ndarray or Gate): 要分解的两量子比特酉矩阵或Gate对象
-        basis_gate (str): 分解的基门，可以是 'cx', 'cz', 'swap', 或 'cr' (CRZ)
+        basis_gate (str): 分解的基门，可以是 'cx', 'cz', 'swap', 'cr' (CRZ) 或 'rxx'
         use_dag (bool): 如果为True，返回DAGCircuit，否则返回Circuit
         atol (float): 容差
 
     返回:
         Circuit or DAGCircuit: 分解后的电路
     """
-    if basis_gate not in ['cx', 'cz', 'swap', 'cr']:
+    if basis_gate not in ['cx', 'cz', 'swap', 'cr', 'rxx']:
         raise ParameterError(f"不支持的基门类型: {basis_gate}")
     
     # 检查输入是否为Gate对象，如果是则获取其矩阵表示
@@ -101,7 +102,7 @@ def _decompose_two_qubit_gate(unitary, basis_gate='cx', use_dag=False, atol=DEFA
 
     参数:
         unitary (np.ndarray): 要分解的两量子比特酉矩阵
-        basis_gate (str): 分解的基门，可以是 'cx', 'cz', 'swap', 或 'cr' (CRZ)
+        basis_gate (str): 分解的基门，可以是 'cx', 'cz', 'swap', 'cr' (CRZ) 或 'rxx'
         use_dag (bool): 如果为True，返回DAGCircuit，否则返回Circuit
         atol (float): 容差
 
@@ -131,6 +132,11 @@ def _decompose_two_qubit_gate(unitary, basis_gate='cx', use_dag=False, atol=DEFA
     elif np.allclose(unitary, SwapGate().to_matrix(), atol=atol) and basis_gate == 'swap':
         circuit = Circuit(n_qubits=2)
         circuit.swap(0, 1)
+        return circuit_to_dag(circuit) if use_dag else circuit
+    
+    elif np.allclose(unitary, RXXGate(np.pi/2).to_matrix(), atol=atol) and basis_gate == 'rxx':
+        circuit = Circuit(n_qubits=2)
+        circuit.rxx(np.pi/2, 0, 1)
         return circuit_to_dag(circuit) if use_dag else circuit
     
     # 如果是CR类门，且基门是CR，则直接返回
@@ -175,6 +181,9 @@ def _decompose_two_qubit_gate(unitary, basis_gate='cx', use_dag=False, atol=DEFA
         circuit.cx(0, 1)
         circuit.cx(1, 0)
         circuit.cx(0, 1)
+    elif basis_gate == 'rxx':
+        # 对于RXX基，使用RXX门
+        circuit.rxx(np.pi/2, 0, 1)
     else:
         raise ValueError(f"Unsupported basis gate: {basis_gate}")
     
