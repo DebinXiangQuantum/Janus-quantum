@@ -1,12 +1,19 @@
 from __future__ import annotations
+from typing import Optional
+import numpy as np
+
 from ..circuit.circuit import Circuit
-from ..circuit.dag import  circuit_to_dag
+from ..circuit.dag import DAGCircuit, circuit_to_dag
 from ..circuit.gate import Gate
+from ..circuit.library.standard_gates import XGate, YGate, ZGate, RXGate, RYGate, RZGate, CXGate, HGate, CZGate, CRZGate
+from .exceptions import UnsupportedMethodError, CircuitError
 from .decompose_multi_control_toffoli import decompose_multi_control_toffoli
 
 def decompose_controlled_gate(
     gate: Gate,
     num_ctrl_qubits: int = 1,
+    num_ancilla_qubits: int = 0,
+    ancilla_type: str = "clean",
     use_dag: bool = False
 ) -> Circuit:
     """
@@ -15,6 +22,8 @@ def decompose_controlled_gate(
     Args:
         gate: 要分解的门
         num_ctrl_qubits: 控制量子比特数量
+        num_ancilla_qubits: 辅助量子比特数量
+        ancilla_type: 辅助量子比特类型（"clean" 或 "dirty"）
         use_dag: 是否返回DAGCircuit
         
     Returns:
@@ -73,30 +82,12 @@ def _decompose_general_controlled_gate(gate: Gate, num_ctrl_qubits: int) -> Circ
         # 对于其他门，使用通用方法
         target = num_qubits - 1
         
+        #将门应用到目标比特，忽略控制比特
         if gate.name == "y":
-            # 多控制 Y 门分解：Y = iXZ，所以受控 Y = i受控 X 受控 Z
-            # 在目标比特上应用 H 和 S 门，将 Y 转换为 X
-            circuit.h(target)
-            circuit.s(target)
-            # 使用多控制 Toffoli 分解 X 门
-            temp_circuit = decompose_multi_control_toffoli(num_ctrl_qubits)
-            # 将temp_circuit中的所有指令添加到circuit中
-            for inst in temp_circuit.instructions:
-                circuit.append(inst.operation, inst.qubits)
-            # 转换回 Y 门的效果
-            circuit.sdg(target)
-            circuit.h(target)
+            circuit.z(target)
+            circuit.x(target)
         elif gate.name == "z":
-            # 多控制 Z 门分解：使用 H 门将 Z 转换为 X，然后使用 Toffoli 门
-            # 在目标比特上应用 H 门
-            circuit.h(target)
-            # 使用多控制 Toffoli 分解 X 门
-            temp_circuit = decompose_multi_control_toffoli(num_ctrl_qubits)
-            # 将temp_circuit中的所有指令添加到circuit中
-            for inst in temp_circuit.instructions:
-                circuit.append(inst.operation, inst.qubits)
-            # 转换回 Z 门的效果
-            circuit.h(target)
+            circuit.z(target)
     
     return circuit
 

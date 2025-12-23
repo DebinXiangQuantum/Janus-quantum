@@ -1,9 +1,9 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Optional, Union
 import numpy as np
-from janus.circuit import Circuit, Gate
-from janus.circuit.dag import circuit_to_dag
-from janus.circuit.library.standard_gates import (
+from circuit import Circuit, Qubit, Gate, DAGCircuit
+from circuit.dag import circuit_to_dag
+from circuit.library.standard_gates import (
     UGate,
     XGate,
     RXGate,
@@ -17,10 +17,9 @@ from janus.circuit.library.standard_gates import (
     YGate,
     HGate,
 )
-from .exceptions import ParameterError,  DecomposeError
+from .exceptions import ParameterError, GateNotSupportedError, DecomposeError
 
 DEFAULT_ATOL = 1e-12
-
 ONE_QUBIT_EULER_BASIS_GATES = {
     "U": ["u"],
     "ZYZ": ["rz", "ry"],
@@ -55,20 +54,8 @@ class EulerOneQubitDecomposer:
             phi = 0
             lam = np.angle(d)
         else:
-            # 修复H门的分解问题
-            if np.isclose(np.abs(a), np.abs(b)) and np.isclose(np.abs(c), np.abs(d)) and np.isclose(np.abs(a), np.abs(c)):
-                # 这是H门的情况
-                phi = 0
-                lam = np.pi
-            # 修复Y门的分解问题
-            elif np.isclose(a, 0) and np.isclose(d, 0) and np.isclose(b, -1j) and np.isclose(c, 1j):
-                # 这是Y门的情况
-                theta = np.pi
-                phi = np.pi/2
-                lam = np.pi/2
-            else:
-                phi = np.angle(c)
-                lam = -np.angle(b)
+            phi = np.angle(c)
+            lam = -np.angle(b)
         phase = np.angle(a)
         return theta, phi, lam, phase
     @staticmethod
@@ -87,40 +74,31 @@ class EulerOneQubitDecomposer:
     def params_u3(unitary: np.ndarray) -> tuple:
         return EulerOneQubitDecomposer.params_zyz(unitary)
     @staticmethod
-    def unitary_to_circuit(unitary: np.ndarray, basis: List[str], use_dag: bool = False) -> Circuit:
+    def unitary_to_circuit(unitary: np.ndarray, basis: List[str], qubits: int, method: Optional[str] = None, simplify: bool = True, atol: float = DEFAULT_ATOL) -> Circuit:
         circuit = Circuit(1)
-        # 直接使用EulerOneQubitDecomposer的params方法，而不是创建OneQubitEulerDecomposer实例
+        decomposer = OneQubitEulerDecomposer(basis=basis[0])
+        theta, phi, lam, phase = decomposer._params(unitary)
         if basis[0] == "U":
-            theta, phi, lam, phase = EulerOneQubitDecomposer.params_u3(unitary)
             circuit.u(theta, phi, lam, 0)
         elif basis[0] == "ZYZ":
-            theta, phi, lam, phase = EulerOneQubitDecomposer.params_zyz(unitary)
             circuit.rz(phi, 0)
             circuit.ry(theta, 0)
             circuit.rz(lam, 0)
         elif basis[0] == "ZXZ":
-            theta, phi, lam, phase = EulerOneQubitDecomposer.params_zxz(unitary)
             circuit.rz(phi, 0)
             circuit.rx(theta, 0)
             circuit.rz(lam, 0)
         elif basis[0] == "XYX":
-            theta, phi, lam, phase = EulerOneQubitDecomposer.params_xyx(unitary)
             circuit.rx(phi, 0)
             circuit.ry(theta, 0)
             circuit.rx(lam, 0)
         elif basis[0] == "XZX":
-            theta, phi, lam, phase = EulerOneQubitDecomposer.params_xzx(unitary)
             circuit.rx(phi, 0)
             circuit.rz(theta, 0)
             circuit.rx(lam, 0)
-        
-        # 添加全局相位门
-        if not np.isclose(phase, 0, atol=1e-10):
-            circuit.p(phase, 0)
-        
         return circuit
     @staticmethod
-    def unitary_to_gate_sequence(unitary: np.ndarray) -> 'GateSequence':
+    def unitary_to_gate_sequence(unitary: np.ndarray, basis: List[str], qubits: int, method: Optional[str] = None, simplify: bool = True, atol: float = DEFAULT_ATOL) -> 'GateSequence':
         class GateSequence:
             def __init__(self):
                 self.global_phase = 0.0
@@ -136,7 +114,7 @@ class OneQubitEulerDecomposer:
     def __init__(self, basis: str = "U", use_dag: bool = False):
         self.basis = basis
         self.use_dag = use_dag
-    def build_circuit(self, gates) -> Circuit:
+    def build_circuit(self, gates, global_phase) -> Circuit:
         qc = Circuit(1)
         for gate_entry in gates:
             if isinstance(gate_entry, tuple):
@@ -146,6 +124,7 @@ class OneQubitEulerDecomposer:
         return qc
     def __call__(self,
         unitary: Operator | Gate | np.ndarray,
+        simplify: bool = True,
         atol: float = DEFAULT_ATOL,
     ) -> Circuit:
         if hasattr(unitary, "to_operator"):
@@ -157,13 +136,13 @@ class OneQubitEulerDecomposer:
             raise ParameterError("OneQubitEulerDecomposer: expected 2x2 input matrix")
         if not is_unitary_matrix(unitary):
             raise DecomposeError("OneQubitEulerDecomposer: input matrix is not unitary.")
-        return self._decompose(unitary, atol=atol)
-    def _decompose(self, unitary, atol=DEFAULT_ATOL):
+        return self._decompose(unitary, simplify=simplify, atol=atol)
+    def _decompose(self, unitary, simplify=True, atol=DEFAULT_ATOL):
         if self.use_dag:
             # 使用DAGCircuit实现
             # 首先创建普通电路
             circuit = euler_one_qubit_decomposer.unitary_to_circuit(
-                unitary, [self.basis], self.use_dag
+                unitary, [self.basis], 0, None, simplify, atol
             )
             
             # 转换为DAGCircuit并返回
@@ -171,7 +150,7 @@ class OneQubitEulerDecomposer:
         else:
             # 原始实现，返回普通Circuit
             return euler_one_qubit_decomposer.unitary_to_circuit(
-                unitary, [self.basis], self.use_dag
+                unitary, [self.basis], 0, None, simplify, atol
             )
     @property
     def basis(self):
@@ -201,6 +180,6 @@ class OneQubitEulerDecomposer:
     _params_xyx = staticmethod(euler_one_qubit_decomposer.params_xyx)
     _params_xzx = staticmethod(euler_one_qubit_decomposer.params_xzx)
     _params_u3 = staticmethod(euler_one_qubit_decomposer.params_u3)
-def decompose_one_qubit(unitary, basis='U', use_dag=False, atol=DEFAULT_ATOL):
+def decompose_one_qubit(unitary, basis='U', simplify=True, atol=DEFAULT_ATOL, use_dag=False):
     decomposer = OneQubitEulerDecomposer(basis=basis, use_dag=use_dag)
-    return decomposer(unitary, atol=atol)
+    return decomposer(unitary, simplify=simplify, atol=atol)
