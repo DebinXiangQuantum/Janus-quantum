@@ -65,8 +65,12 @@ class Instruction:
     
     def to_dict(self) -> dict:
         """转换为字典格式"""
-        return {
+        result = {
             'name': self._operation.name,
             'qubits': self._qubits,
             'params': self._operation.params
         }
+        # 如果有经典比特，添加 clbits 字段
+        if self._clbits:
+            result['clbits'] = self._clbits
+        return result

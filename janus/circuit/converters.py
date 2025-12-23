@@ -252,30 +252,42 @@ def to_instruction_list(circuit: Circuit) -> list:
     return [(inst.name, inst.qubits, inst.params) for inst in circuit.instructions]
 
 
-def from_instruction_list(instructions: list, n_qubits: int = None) -> Circuit:
+def from_instruction_list(instructions: list, n_qubits: int = None, n_clbits: int = None) -> Circuit:
     """
     从指令数组创建 Janus Circuit
     
     Args:
-        instructions: [(name, qubits, params), ...] 或 [{'name':..., 'qubits':..., 'params':...}, ...]
+        instructions: [(name, qubits, params), ...] 或 [{'name':..., 'qubits':..., 'params':..., 'clbits':...}, ...]
         n_qubits: 量子比特数，如果不指定则自动推断
+        n_clbits: 经典比特数，如果不指定则自动推断（根据测量门）
     
     Returns:
         Janus Circuit
     """
-    # 自动推断量子比特数
+    # 自动推断量子比特数和经典比特数
+    max_qubit = 0
+    max_clbit = -1
+    
+    for inst in instructions:
+        if isinstance(inst, dict):
+            qubits = inst['qubits']
+            clbits = inst.get('clbits', [])
+        else:
+            qubits = inst[1]
+            clbits = inst[3] if len(inst) > 3 else []
+        
+        if qubits:
+            max_qubit = max(max_qubit, max(qubits))
+        if clbits:
+            max_clbit = max(max_clbit, max(clbits))
+    
     if n_qubits is None:
-        max_qubit = 0
-        for inst in instructions:
-            if isinstance(inst, dict):
-                qubits = inst['qubits']
-            else:
-                qubits = inst[1]
-            if qubits:
-                max_qubit = max(max_qubit, max(qubits))
         n_qubits = max_qubit + 1
     
-    circuit = Circuit(n_qubits)
+    if n_clbits is None:
+        n_clbits = max_clbit + 1 if max_clbit >= 0 else 0
+    
+    circuit = Circuit(n_qubits, n_clbits=n_clbits)
     
     for inst in instructions:
         # 支持两种格式
@@ -283,11 +295,15 @@ def from_instruction_list(instructions: list, n_qubits: int = None) -> Circuit:
             name = inst['name']
             qubits = inst['qubits']
             params = inst.get('params', [])
+            clbits = inst.get('clbits', [])
         else:
-            name, qubits, params = inst
+            name = inst[0]
+            qubits = inst[1]
+            params = inst[2] if len(inst) > 2 else []
+            clbits = inst[3] if len(inst) > 3 else []
         
         gate = _create_gate(name, params, qubits)
         if gate is not None:
-            circuit.append(gate, qubits)
+            circuit.append(gate, qubits, clbits if clbits else None)
     
     return circuit

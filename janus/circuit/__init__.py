@@ -18,6 +18,13 @@ from .dag import (
     BlockCollector, BlockSplitter, BlockCollapser, split_block_into_layers
 )
 
+# 文件读写
+from .io import (
+    load_circuit,
+    get_circuits_dir,
+    list_circuits,
+)
+
 # 标准门
 from .library import (
     # 单比特 Pauli 门
@@ -115,6 +122,13 @@ __all__ = [
     # 参数化
     'Parameter',
     'ParameterExpression',
+    # 文件读写
+    'save_circuit',
+    'load_circuit',
+    'save_layers',
+    'load_layers',
+    'save_instructions',
+    'load_instructions',
     # DAG
     'DAGCircuit',
     'DAGNode',

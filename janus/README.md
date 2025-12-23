@@ -352,20 +352,68 @@ circuit = schmidt_encode(q_size=4, data=data, cutoff=1e-4)
 ## 模块结构
 
 ```
-janus/
-├── circuit/
-│   ├── circuit.py      # Circuit、SeperatableCircuit
-│   ├── gate.py         # 门基类
-│   ├── instruction.py  # 指令类
-│   ├── layer.py        # 层表示
-│   ├── dag.py          # DAG 表示
-│   ├── parameter.py    # 参数化支持
-│   └── library/        # 标准门库 (60+)
-├── compiler/
-│   ├── compiler.py     # 编译主函数
-│   └── passes.py       # 优化 Pass
-└── encode/
-    └── schmidt_encode.py
+project/
+├── circuits/           # 电路 JSON 文件存储目录
+├── janus/
+│   ├── circuit/
+│   │   ├── circuit.py      # Circuit、SeperatableCircuit
+│   │   ├── gate.py         # 门基类
+│   │   ├── instruction.py  # 指令类
+│   │   ├── layer.py        # 层表示
+│   │   ├── dag.py          # DAG 表示
+│   │   ├── parameter.py    # 参数化支持
+│   │   ├── io.py           # 文件读写
+│   │   ├── cli.py          # 命令行工具
+│   │   └── library/        # 标准门库 (60+)
+│   ├── compiler/
+│   │   ├── compiler.py     # 编译主函数
+│   │   └── passes.py       # 优化 Pass
+│   └── encode/
+│       └── schmidt_encode.py
+```
+
+## 电路文件读写
+
+### JSON 文件格式
+
+电路以分层格式存储：
+
+```json
+[
+  [{"name": "h", "qubits": [0], "params": []}],
+  [{"name": "cx", "qubits": [0, 1], "params": []}],
+  [{"name": "rx", "qubits": [0], "params": [1.57]}]
+]
+```
+
+### 从文件加载电路
+
+```python
+from janus.circuit import load_circuit, list_circuits
+
+# 列出所有已保存的电路
+print(list_circuits())  # ['bell.json', 'ghz.json']
+
+# 从默认目录加载
+qc = load_circuit(name='bell')
+
+# 从指定路径加载
+qc = load_circuit(filepath='./my_circuit.json')
+```
+
+### 命令行工具
+
+```bash
+# 查看电路信息
+python -m janus.circuit.cli info circuit.json
+python -m janus.circuit.cli info circuit.json -v  # 详细信息
+
+# 绘制电路
+python -m janus.circuit.cli draw circuit.json
+python -m janus.circuit.cli draw circuit.json -o output.png  # 保存图片
+
+# 测试电路功能
+python -m janus.circuit.cli test circuit.json
 ```
 
 ## 许可证

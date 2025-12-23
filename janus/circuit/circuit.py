@@ -1487,6 +1487,135 @@ class Circuit:
         """
         return [(inst.name, inst.qubits, inst.params) for inst in self._instructions]
     
+    # ==================== JSON 序列化方法 ====================
+    
+    def to_json_dict(self) -> Dict:
+        """
+        将电路转换为完整的 JSON 可序列化字典
+        
+        Returns:
+            包含电路完整信息的字典
+        """
+        return {
+            'name': self._name,
+            'n_qubits': self._n_qubits,
+            'n_clbits': self._n_clbits,
+            'instructions': self.to_instructions()
+        }
+    
+    def to_json(self, indent: int = 2) -> str:
+        """
+        将电路转换为 JSON 字符串
+        
+        Args:
+            indent: JSON 缩进空格数，默认 2
+        
+        Returns:
+            JSON 格式字符串
+        """
+        import json
+        return json.dumps(self.to_json_dict(), indent=indent, ensure_ascii=False)
+    
+    def save_json(self, filepath: str, indent: int = 2):
+        """
+        将电路保存为 JSON 文件
+        
+        Args:
+            filepath: 文件路径
+            indent: JSON 缩进空格数，默认 2
+        """
+        import json
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(self.to_json_dict(), f, indent=indent, ensure_ascii=False)
+    
+    @classmethod
+    def from_json_dict(cls, data: Dict) -> 'Circuit':
+        """
+        从字典创建电路
+        
+        Args:
+            data: 包含电路信息的字典
+        
+        Returns:
+            Circuit 实例
+        """
+        from .converters import from_instruction_list
+        
+        n_qubits = data.get('n_qubits')
+        n_clbits = data.get('n_clbits', 0)
+        name = data.get('name')
+        instructions = data.get('instructions', [])
+        
+        circuit = from_instruction_list(instructions, n_qubits=n_qubits, n_clbits=n_clbits)
+        circuit._name = name
+        return circuit
+    
+    @classmethod
+    def from_json(cls, json_str: str) -> 'Circuit':
+        """
+        从 JSON 字符串创建电路
+        
+        Args:
+            json_str: JSON 格式字符串
+        
+        Returns:
+            Circuit 实例
+        """
+        import json
+        data = json.loads(json_str)
+        return cls.from_json_dict(data)
+    
+    @classmethod
+    def load_json(cls, filepath: str) -> 'Circuit':
+        """
+        从 JSON 文件加载电路
+        
+        Args:
+            filepath: 文件路径
+        
+        Returns:
+            Circuit 实例
+        """
+        import json
+        with open(filepath, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        return cls.from_json_dict(data)
+    
+    @classmethod
+    def load_layers_json(cls, filepath: str, n_qubits: int = None, n_clbits: int = 0, name: str = None) -> 'Circuit':
+        """
+        从分层格式 JSON 文件加载电路
+        
+        文件格式: [[{'name': 'h', 'qubits': [0], 'params': []}], [{'name': 'cx', 'qubits': [0, 1], 'params': []}], ...]
+        
+        Args:
+            filepath: 文件路径
+            n_qubits: 量子比特数（可选，自动推断）
+            n_clbits: 经典比特数（默认 0）
+            name: 电路名称（可选）
+        
+        Returns:
+            Circuit 实例
+        """
+        import json
+        with open(filepath, 'r', encoding='utf-8') as f:
+            layers = json.load(f)
+        return cls.from_layers(layers, n_qubits=n_qubits, n_clbits=n_clbits, name=name)
+    
+    def save_layers_json(self, filepath: str, indent: int = 2):
+        """
+        将电路保存为分层格式 JSON 文件
+        
+        输出格式: [[{'name': 'h', 'qubits': [0], 'params': []}], ...]
+        
+        Args:
+            filepath: 文件路径
+            indent: JSON 缩进空格数，默认 2
+        """
+        import json
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(self.to_layers(), f, indent=indent, ensure_ascii=False)
+    
     # ==================== 显示方法 ====================
     
     def __repr__(self) -> str:
