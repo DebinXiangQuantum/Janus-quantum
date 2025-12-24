@@ -189,16 +189,29 @@ class Circuit:
                 
                 # 获取门类
                 gate_cls = get_gate_class(gate_name)
-                if gate_cls:
-                    if params:
-                        gate = gate_cls(*params)
-                    else:
-                        gate = gate_cls()
-                else:
-                    # 回退到通用 Gate
-                    gate = Gate(gate_name, len(qubits), params)
                 
-                circuit.append(gate, qubits)
+                # 处理单比特操作的多比特展开（如 measure, reset）
+                # 这些操作本质上是单比特的，但允许用户传入多个比特作为便捷写法
+                single_qubit_ops = {'measure', 'reset'}
+                if gate_name.lower() in single_qubit_ops and len(qubits) > 1:
+                    # 自动展开为多个单比特操作
+                    for qubit in qubits:
+                        if gate_cls:
+                            gate = gate_cls(*params) if params else gate_cls()
+                        else:
+                            gate = Gate(gate_name, 1, params)
+                        circuit.append(gate, [qubit])
+                else:
+                    if gate_cls:
+                        if params:
+                            gate = gate_cls(*params)
+                        else:
+                            gate = gate_cls()
+                    else:
+                        # 回退到通用 Gate
+                        gate = Gate(gate_name, len(qubits), params)
+                    
+                    circuit.append(gate, qubits)
         
         return circuit
     
