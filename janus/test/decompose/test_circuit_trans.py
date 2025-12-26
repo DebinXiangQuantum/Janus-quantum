@@ -111,6 +111,23 @@ def build_circuit_from_data(circuit_data, n_qubits):
         elif gate_name == 'rzz':
             from janus.circuit.library.standard_gates import RZZGate
             gate = RZZGate(params[0] if params else 0)
+        elif gate_name == 'ccx':
+            from janus.circuit.library.standard_gates import CCXGate
+            gate = CCXGate()
+        elif gate_name == 'ccz':
+            from janus.circuit.library.standard_gates import CCZGate
+            gate = CCZGate()
+        elif gate_name == 'c3x' or gate_name == 'cccx':
+            from janus.circuit.library.standard_gates import C3XGate
+            gate = C3XGate()
+        elif gate_name == 'c4x' or gate_name == 'ccccx':
+            from janus.circuit.library.standard_gates import C4XGate
+            gate = C4XGate()
+        elif gate_name.startswith('mcx'):
+            # 处理多控制X门 (MCXGate)
+            from janus.circuit.library.standard_gates import MCXGate
+            num_ctrl = len(gate_name) - len(gate_name.lstrip('mcx'))  # 计算控制位数量
+            gate = MCXGate(num_ctrl)
         else:
             raise ValueError(f"不支持的门类型: {gate_name}")
         
