@@ -1,0 +1,12 @@
+include LICENSE
+include README.md
+include pyproject.toml
+recursive-include janus *.py
+recursive-include docs *.rst *.py *.md
+prune test
+prune benchmark
+prune .git
+global-exclude *.pyc
+global-exclude __pycache__
+global-exclude *.so
+global-exclude .DS_Store

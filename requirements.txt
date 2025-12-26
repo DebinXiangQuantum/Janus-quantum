@@ -1,12 +1,8 @@
 
 # 核心依赖
-numpy>=1.16.0
+numpy>=1.20.0
+scipy>=1.7.0
 rustworkx>=0.12.0
-scipy>=1.5.0
 
-# 其他依赖
-dill>=0.3.5
-stevedore>=3.0.0
-
-# 可视化 (可选，用于 PNG 电路图)
-matplotlib>=3.0.0
+# 可视化 (可选，用于电路图绘制)
+matplotlib>=3.3.0
