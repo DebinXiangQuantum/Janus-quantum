@@ -8,7 +8,7 @@
 
 .. code-block:: bash
 
-   git clone https://github.com/your-org/janus.git
+   git clone https://github.com/DebinXiangQuantum/Janus-compiler.git
    cd janus
    pip install -e ".[dev]"
 

@@ -65,11 +65,11 @@ full = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/your-org/janus"
+Homepage = "https://github.com/DebinXiangQuantum/Janus-compiler"
 Documentation = "https://janus-quantum.readthedocs.io"
-Repository = "https://github.com/your-org/janus"
-Issues = "https://github.com/your-org/janus/issues"
-Changelog = "https://github.com/your-org/janus/blob/main/CHANGELOG.md"
+Repository = "https://github.com/DebinXiangQuantum/Janus-compiler"
+Issues = "https://github.com/DebinXiangQuantum/Janus-compiler/issues"
+Changelog = "https://github.com/DebinXiangQuantum/Janus-compiler/blob/main/CHANGELOG.md"
 
 [project.scripts]
 janus-cli = "janus.circuit.cli:main"

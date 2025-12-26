@@ -71,7 +71,7 @@ source_suffix = {
 html_theme = 'sphinx_book_theme'
 
 html_theme_options = {
-    "repository_url": "https://github.com/your-org/janus",
+    "repository_url": "https://github.com/DebinXiangQuantum/Janus-compiler",
     "use_repository_button": True,
     "use_download_button": True,
     "use_fullscreen_button": True,
