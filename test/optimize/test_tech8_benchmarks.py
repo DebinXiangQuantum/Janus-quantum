@@ -132,6 +132,27 @@ def run_optimization_test(qc, description):
     return qc_optimized, reduction_rate
 
 
+def print_optimized_circuit(circuit, description=""):
+    """打印优化后的电路"""
+    print(f"\n{'='*70}")
+    print("输出优化后的量子电路。")
+    print(f"{'='*70}")
+    print(f"电路描述: {description}")
+    print(f"量子比特数: {circuit.n_qubits}")
+    print(f"门数量: {len(circuit.data)}")
+    print(f"\n门列表:")
+    for i, inst in enumerate(circuit.data):
+        gate_name = inst.operation.name
+        qubits = inst.qubits
+        params = inst.operation.params if inst.operation.params else []
+        if params:
+            params_str = ", ".join([f"{p:.6f}" for p in params])
+            print(f"  {i+1}. {gate_name}({params_str}) on qubits {qubits}")
+        else:
+            print(f"  {i+1}. {gate_name} on qubits {qubits}")
+    print(f"{'='*70}")
+
+
 def main():
     parser = argparse.ArgumentParser(description='Tech8: Benchmark Tests')
     parser.add_argument('--file', type=str, help='Input circuit JSON file path')
@@ -140,6 +161,9 @@ def main():
     print("="*70)
     print("Tech8: Benchmark Tests")
     print("="*70)
+
+    qc_optimized = None
+    description = ""
 
     if args.file:
         filepath = args.file
@@ -159,14 +183,16 @@ def main():
                     sys.exit(1)
         
         qc, description = load_circuit_from_json(filepath)
-        run_optimization_test(qc, description)
+        qc_optimized, _ = run_optimization_test(qc, description)
+        description = f"Tech8优化后: {description}"
     else:
         qc, desc = create_large_scale_circuit()
-        run_optimization_test(qc, desc)
+        qc_optimized, _ = run_optimization_test(qc, desc)
+        description = f"Tech8优化后: {desc}"
 
-    print("\n" + "="*70)
-    print("输出优化后的量子电路。")
-    print("="*70)
+    # 输出优化后的电路
+    if qc_optimized:
+        print_optimized_circuit(qc_optimized, description)
 
 
 if __name__ == '__main__':
