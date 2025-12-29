@@ -1,0 +1,54 @@
+{
+  "circuit": [
+    {
+      "name": "sdg",
+      "qubits": [
+        2
+      ],
+      "params": []
+    },
+    {
+      "name": "h",
+      "qubits": [
+        2
+      ],
+      "params": []
+    },
+    {
+      "name": "crz",
+      "qubits": [
+        0,
+        2
+      ],
+      "params": [
+        0.7853981633974483
+      ]
+    },
+    {
+      "name": "crz",
+      "qubits": [
+        1,
+        2
+      ],
+      "params": [
+        0.7853981633974483
+      ]
+    },
+    {
+      "name": "h",
+      "qubits": [
+        2
+      ],
+      "params": []
+    },
+    {
+      "name": "s",
+      "qubits": [
+        2
+      ],
+      "params": []
+    }
+  ],
+  "num_gates": 6,
+  "qubits_used": 3
+}

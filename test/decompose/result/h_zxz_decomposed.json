@@ -1,0 +1,33 @@
+{
+  "circuit": [
+    {
+      "name": "rz",
+      "qubits": [
+        0
+      ],
+      "params": [
+        1.5707963267948966
+      ]
+    },
+    {
+      "name": "rx",
+      "qubits": [
+        0
+      ],
+      "params": [
+        1.5707963267948968
+      ]
+    },
+    {
+      "name": "rz",
+      "qubits": [
+        0
+      ],
+      "params": [
+        1.5707963267948966
+      ]
+    }
+  ],
+  "num_gates": 3,
+  "qubits_used": 1
+}

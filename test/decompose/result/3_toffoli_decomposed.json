@@ -1,0 +1,339 @@
+{
+  "circuit": [
+    {
+      "name": "h",
+      "qubits": [
+        2
+      ],
+      "params": []
+    },
+    {
+      "name": "cx",
+      "qubits": [
+        1,
+        2
+      ],
+      "params": []
+    },
+    {
+      "name": "tdg",
+      "qubits": [
+        2
+      ],
+      "params": []
+    },
+    {
+      "name": "cx",
+      "qubits": [
+        0,
+        2
+      ],
+      "params": []
+    },
+    {
+      "name": "t",
+      "qubits": [
+        2
+      ],
+      "params": []
+    },
+    {
+      "name": "cx",
+      "qubits": [
+        1,
+        2
+      ],
+      "params": []
+    },
+    {
+      "name": "tdg",
+      "qubits": [
+        2
+      ],
+      "params": []
+    },
+    {
+      "name": "cx",
+      "qubits": [
+        0,
+        2
+      ],
+      "params": []
+    },
+    {
+      "name": "t",
+      "qubits": [
+        1
+      ],
+      "params": []
+    },
+    {
+      "name": "t",
+      "qubits": [
+        2
+      ],
+      "params": []
+    },
+    {
+      "name": "h",
+      "qubits": [
+        2
+      ],
+      "params": []
+    },
+    {
+      "name": "cx",
+      "qubits": [
+        0,
+        1
+      ],
+      "params": []
+    },
+    {
+      "name": "t",
+      "qubits": [
+        0
+      ],
+      "params": []
+    },
+    {
+      "name": "tdg",
+      "qubits": [
+        1
+      ],
+      "params": []
+    },
+    {
+      "name": "cx",
+      "qubits": [
+        0,
+        1
+      ],
+      "params": []
+    },
+    {
+      "name": "h",
+      "qubits": [
+        3
+      ],
+      "params": []
+    },
+    {
+      "name": "cx",
+      "qubits": [
+        2,
+        3
+      ],
+      "params": []
+    },
+    {
+      "name": "tdg",
+      "qubits": [
+        3
+      ],
+      "params": []
+    },
+    {
+      "name": "cx",
+      "qubits": [
+        1,
+        3
+      ],
+      "params": []
+    },
+    {
+      "name": "t",
+      "qubits": [
+        3
+      ],
+      "params": []
+    },
+    {
+      "name": "cx",
+      "qubits": [
+        2,
+        3
+      ],
+      "params": []
+    },
+    {
+      "name": "tdg",
+      "qubits": [
+        3
+      ],
+      "params": []
+    },
+    {
+      "name": "cx",
+      "qubits": [
+        1,
+        3
+      ],
+      "params": []
+    },
+    {
+      "name": "t",
+      "qubits": [
+        2
+      ],
+      "params": []
+    },
+    {
+      "name": "t",
+      "qubits": [
+        3
+      ],
+      "params": []
+    },
+    {
+      "name": "h",
+      "qubits": [
+        3
+      ],
+      "params": []
+    },
+    {
+      "name": "cx",
+      "qubits": [
+        1,
+        2
+      ],
+      "params": []
+    },
+    {
+      "name": "t",
+      "qubits": [
+        1
+      ],
+      "params": []
+    },
+    {
+      "name": "tdg",
+      "qubits": [
+        2
+      ],
+      "params": []
+    },
+    {
+      "name": "cx",
+      "qubits": [
+        1,
+        2
+      ],
+      "params": []
+    },
+    {
+      "name": "h",
+      "qubits": [
+        2
+      ],
+      "params": []
+    },
+    {
+      "name": "cx",
+      "qubits": [
+        1,
+        2
+      ],
+      "params": []
+    },
+    {
+      "name": "tdg",
+      "qubits": [
+        2
+      ],
+      "params": []
+    },
+    {
+      "name": "cx",
+      "qubits": [
+        0,
+        2
+      ],
+      "params": []
+    },
+    {
+      "name": "t",
+      "qubits": [
+        2
+      ],
+      "params": []
+    },
+    {
+      "name": "cx",
+      "qubits": [
+        1,
+        2
+      ],
+      "params": []
+    },
+    {
+      "name": "tdg",
+      "qubits": [
+        2
+      ],
+      "params": []
+    },
+    {
+      "name": "cx",
+      "qubits": [
+        0,
+        2
+      ],
+      "params": []
+    },
+    {
+      "name": "t",
+      "qubits": [
+        1
+      ],
+      "params": []
+    },
+    {
+      "name": "t",
+      "qubits": [
+        2
+      ],
+      "params": []
+    },
+    {
+      "name": "h",
+      "qubits": [
+        2
+      ],
+      "params": []
+    },
+    {
+      "name": "cx",
+      "qubits": [
+        0,
+        1
+      ],
+      "params": []
+    },
+    {
+      "name": "t",
+      "qubits": [
+        0
+      ],
+      "params": []
+    },
+    {
+      "name": "tdg",
+      "qubits": [
+        1
+      ],
+      "params": []
+    },
+    {
+      "name": "cx",
+      "qubits": [
+        0,
+        1
+      ],
+      "params": []
+    }
+  ],
+  "num_gates": 45,
+  "qubits_used": 4
+}

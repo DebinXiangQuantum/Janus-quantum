@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from janus.decompose.decompose_one_qubit import OneQubitEulerDecomposer, is_unitary_matrix
 from janus.circuit import Circuit
-from janus.circuit.io import load_circuit
+from janus.circuit import load_circuit
 
 
 def load_matrix_from_json(file_path):
@@ -105,7 +105,7 @@ def main():
         # 尝试加载为电路
         loaded_circuit = load_circuit(filepath=args.file)
         print(f"Successfully loaded circuit from {args.file}:")
-        print(loaded_circuit)
+        print(loaded_circuit.draw())
         
         # 提取电路中的矩阵（如果适用）
         # 对于单量子比特门，我们可以获取第一个门的矩阵
@@ -154,20 +154,21 @@ def main():
         
         # 打印分解后的量子电路
         print("\nDecomposed quantum circuit:")
-        for i, inst in enumerate(decomposed_circuit.instructions):
-            params_str = f" params={inst.params}" if inst.params else ""
-            # 检查qubits是否是对象还是索引
-            if hasattr(inst.qubits[0], 'index'):
-                qubit_info = f"qubit {inst.qubits[0].index}"
-            else:
-                qubit_info = f"qubit {inst.qubits[0]}"
-            print(f"  {i+1}. {inst.name}{params_str} on {qubit_info}")
+        print(decomposed_circuit.draw())
+        # for i, inst in enumerate(decomposed_circuit.instructions):
+        #     params_str = f" params={inst.params}" if inst.params else ""
+        #     # 检查qubits是否是对象还是索引
+        #     if hasattr(inst.qubits[0], 'index'):
+        #         qubit_info = f"qubit {inst.qubits[0].index}"
+        #     else:
+        #         qubit_info = f"qubit {inst.qubits[0]}"
+        #     print(f"  {i+1}. {inst.name}{params_str} on {qubit_info}")
         
-        # 使用to_dict_list方法获取电路的字典表示
-        circuit_dict_list = decomposed_circuit.to_dict_list()
-        print(f"\nCircuit representation (to_dict_list format):")
-        for i, gate_dict in enumerate(circuit_dict_list):
-            print(f"  {i+1}. {gate_dict}")
+        # # 使用to_dict_list方法获取电路的字典表示
+        # circuit_dict_list = decomposed_circuit.to_dict_list()
+        # print(f"\nCircuit representation (to_dict_list format):")
+        # for i, gate_dict in enumerate(circuit_dict_list):
+        #     print(f"  {i+1}. {gate_dict}")
         
         # 保存电路表示到JSON文件（无论是否指定输出文件）
         save_circuit_to_json(decomposed_circuit, args.output)

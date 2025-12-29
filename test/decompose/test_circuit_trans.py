@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from janus.decompose.convert_circuit_to_instruction_set import convert_circuit_to_instruction_set
 from janus.circuit import Circuit
-from janus.circuit.io import load_circuit
+from janus.circuit import load_circuit
 
 
 def save_circuit_to_json(circuit, output_file):
@@ -217,21 +217,7 @@ def main():
         
         # 打印转换后的量子电路
         print("\nConverted quantum circuit:")
-        for i, inst in enumerate(converted_circuit.instructions):
-            params_str = f" params={inst.params}" if inst.params else ""
-            # 获取所有量子比特的索引
-            if hasattr(inst.qubits[0], 'index'):
-                qubit_indices = [q.index for q in inst.qubits]
-            else:
-                qubit_indices = inst.qubits
-            qubit_info = ', '.join([f"qubit {idx}" for idx in qubit_indices])
-            print(f"  {i+1}. {inst.name}{params_str} on {qubit_info}")
-        
-        # 使用to_dict_list方法获取电路的字典表示
-        circuit_dict_list = converted_circuit.to_dict_list()
-        print(f"\nCircuit representation (to_dict_list format):")
-        for i, gate_dict in enumerate(circuit_dict_list):
-            print(f"  {i+1}. {gate_dict}")
+        print(converted_circuit.draw())
         
         # 保存电路表示到JSON文件（无论是否指定输出文件）
         save_circuit_to_json(converted_circuit, args.output)

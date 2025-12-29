@@ -142,6 +142,10 @@ __pycache__/
 celerybeat-schedule
 celerybeat.pid
 
+*/.DS_Store
+*/*/.DS_Store
+*/*/*/.DS_Store
+*/*/*/*/.DS_Store
 # SageMath parsed files
 *.sage.py
 .*/

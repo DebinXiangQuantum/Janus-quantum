@@ -141,17 +141,7 @@ def print_optimized_circuit(circuit, description=""):
     print(f"量子比特数: {circuit.n_qubits}")
     print(f"门数量: {len(circuit.data)}")
     print(f"\n门列表:")
-    for i, inst in enumerate(circuit.data):
-        gate_name = inst.operation.name
-        qubits = inst.qubits
-        params = inst.operation.params if inst.operation.params else []
-        if params:
-            params_str = ", ".join([f"{p:.6f}" for p in params])
-            print(f"  {i+1}. {gate_name}({params_str}) on qubits {qubits}")
-        else:
-            print(f"  {i+1}. {gate_name} on qubits {qubits}")
-    print(f"{'='*70}")
-
+    print(circuit.draw())
 
 def main():
     parser = argparse.ArgumentParser(description='Tech8: Benchmark Tests')

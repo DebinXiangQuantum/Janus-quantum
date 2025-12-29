@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from janus.decompose.decompose_multi_control_toffoli import decompose_multi_control_toffoli
 from janus.circuit import Circuit
-from janus.circuit.io import load_circuit
+from janus.circuit import load_circuit
 
 
 def save_circuit_to_json(circuit, output_file):
@@ -103,23 +103,8 @@ def main():
         
         # 打印分解后的量子电路
         print("\nDecomposed quantum circuit:")
-        for i, inst in enumerate(decomposed_circuit.instructions):
-            params_str = f" params={inst.params}" if inst.params else ""
-            # 获取所有量子比特的索引
-            if hasattr(inst.qubits[0], 'index'):
-                qubit_indices = [q.index for q in inst.qubits]
-            else:
-                qubit_indices = inst.qubits
-            qubit_info = ', '.join([f"qubit {idx}" for idx in qubit_indices])
-            print(f"  {i+1}. {inst.name}{params_str} on {qubit_info}")
-        
-        # 使用to_dict_list方法获取电路的字典表示
-        circuit_dict_list = decomposed_circuit.to_dict_list()
-        print(f"\nCircuit representation (to_dict_list format):")
-        for i, gate_dict in enumerate(circuit_dict_list):
-            print(f"  {i+1}. {gate_dict}")
-        
-        # 保存电路表示到JSON文件（无论是否指定输出文件）
+        print(decomposed_circuit.draw())
+
         save_circuit_to_json(decomposed_circuit, args.output)
         
         print(f"\n✓ {num_ctrl_qubits}-controlled Toffoli gate decomposition completed successfully!")
