@@ -126,7 +126,18 @@ ipython_config.py
 
 # PEP 582; used by e.g. github.com/David-OConnor/pyflow and github.com/pdm-project/pdm
 __pypackages__/
+*/__pypackages__/
+*/.venv/
+*/*/__pypackages__/
+*/*/*/__pypackages__/
+*/*/*/*/__pypackages__/
+*/*/*/*/*/__pypackages__/
 
+__pycache__/
+*/__pycache__/
+*/*/__pycache__/
+*/*/*/__pycache__/
+*/*/*/*/__pycache__/
 # Celery stuff
 celerybeat-schedule
 celerybeat.pid
@@ -205,7 +216,6 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
-qiskit
 ablation_results
 checkpoints
 data
