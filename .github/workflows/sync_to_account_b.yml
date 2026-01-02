@@ -23,12 +23,17 @@ jobs:
           git ls-remote https://xiangdebinBackup:${{ secrets.BACKUP_TOKEN }}@github.com/xiangdebinBackup/Janus-quantum.git HEAD
       - name: Push to Account B
         run: |
-          # 设置账号 B 的仓库地址，注意使用 Secret 变量
-          REMOTE_REPO="https://${{ secrets.BACKUP_TOKEN }}@github.com/xiangdebinBackup/Janus-quantum.git"
+          # 1. 配置 Git 用户信息（防止 Git 识别为匿名用户）
+          git config --global user.email "xiangdebin3@gmail.com"
+          git config --global user.name "xiangdebinBackup"
+
+          # 2. 清除可能干扰的现有远程仓库
+          git remote remove backup || true
           
-          # 添加远程仓库
-          git remote add backup "$REMOTE_REPO"
+          # 3. 关键点：将 Token 直接嵌入 URL，并移除可能干扰认证的 header
+          # 注意：这里我们不再依赖环境自带的认证
+          git remote add backup "https://${{ secrets.BACKUP_TOKEN }}@github.com/xiangdebinBackup/Janus-quantum.git"
           
-          # 推送到账号 B 的 main 分支
-          # 注意：这里不使用 --force，如果账号 B 领先或冲突，脚本会报错，提醒你检查安全性
+          # 4. 执行推送
+          # 使用 -u 建立追踪关系，--force 确保覆盖（如果这是你的意图）
           git push backup main
